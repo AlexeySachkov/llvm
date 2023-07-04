@@ -1,4 +1,4 @@
-// RUN: %clangxx -fsycl -fsyntax-only %s
+// RUN: %clangxx -fsycl -fsyntax-only -Wno-deprecated-declarations %s
 
 // Test checks that the subscript operator and reference alias on accessors
 // evaluate to the right types.

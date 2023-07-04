@@ -12,7 +12,6 @@
 #include <sycl/atomic.hpp>
 #include <sycl/atomic_ref.hpp>
 #include <sycl/detail/tuple.hpp>
-#include <sycl/exception.hpp>
 #include <sycl/ext/oneapi/accessor_property_list.hpp>
 #include <sycl/group_algorithm.hpp>
 #include <sycl/handler.hpp>
@@ -960,9 +959,11 @@ public:
       for (int i = 0; i < num_elements; ++i) {
         (*RWReduVal)[i] = decltype(MIdentityContainer)::getIdentity();
       }
+      CGH.addReduction(RWReduVal);
       auto Buf = std::make_shared<buffer<T, 1>>(RWReduVal.get()->data(),
                                                 range<1>(num_elements));
       Buf->set_final_data();
+      CGH.addReduction(Buf);
       accessor Mem{*Buf, CGH};
       Func(Mem);
 
@@ -973,10 +974,6 @@ public:
         // so use the old-style API.
         auto Mem =
             Buf->template get_access<access::mode::read_write>(CopyHandler);
-        // Since this CG is dependent on the one associated with CGH,
-        // registering the auxiliary resources here is enough.
-        CopyHandler.addReduction(RWReduVal);
-        CopyHandler.addReduction(Buf);
         if constexpr (is_usm) {
           // Can't capture whole reduction, copy into distinct variables.
           bool IsUpdateOfUserVar = !initializeToIdentity();
@@ -1112,11 +1109,11 @@ public:
       : algo(BOp, InitializeToIdentity, Var) {
     if constexpr (!is_usm)
       if (Var.size() != 1)
-        throw sycl::exception(make_error_code(errc::invalid),
+        throw sycl::exception(errc::invalid,
                               "Reduction variable must be a scalar.");
     if constexpr (!is_known_identity)
       if (InitializeToIdentity)
-        throw sycl::exception(make_error_code(errc::invalid),
+        throw sycl::exception(errc::invalid,
                               "initialize_to_identity property cannot be "
                               "used with identityless reductions.");
   }
@@ -1130,7 +1127,7 @@ public:
       : algo(Identity, BOp, InitializeToIdentity, Var) {
     if constexpr (!is_usm)
       if (Var.size() != 1)
-        throw sycl::exception(make_error_code(errc::invalid),
+        throw sycl::exception(errc::invalid,
                               "Reduction variable must be a scalar.");
   }
 };
@@ -1680,7 +1677,7 @@ struct NDRangeReduction<
     // for the device.
     size_t MaxWGSize = reduGetMaxWGSize(Queue, OneElemSize);
     if (NDRange.get_local_range().size() > MaxWGSize)
-      throw sycl::exception(make_error_code(errc::nd_range),
+      throw sycl::exception(sycl::errc::invalid,
                             "The implementation handling parallel_for with"
                             " reduction requires work group size not bigger"
                             " than " +
@@ -1725,7 +1722,7 @@ struct NDRangeReduction<
     // TODO: Create a special slow/sequential version of the kernel that would
     // handle the reduction instead of reporting an assert below.
     if (MaxWGSize <= 1)
-      throw sycl::exception(make_error_code(errc::nd_range),
+      throw sycl::exception(sycl::errc::invalid,
                             "The implementation handling parallel_for with "
                             "reduction requires the maximal work group "
                             "size to be greater than 1 to converge. "
@@ -1808,7 +1805,7 @@ template <> struct NDRangeReduction<reduction::strategy::basic> {
     // compiled for the device.
     size_t MaxWGSize = reduGetMaxWGSize(Queue, OneElemSize);
     if (NDRange.get_local_range().size() > MaxWGSize)
-      throw sycl::exception(make_error_code(errc::nd_range),
+      throw sycl::exception(sycl::errc::invalid,
                             "The implementation handling parallel_for with"
                             " reduction requires work group size not bigger"
                             " than " +
@@ -1904,7 +1901,7 @@ template <> struct NDRangeReduction<reduction::strategy::basic> {
     // TODO: Create a special slow/sequential version of the kernel that would
     // handle the reduction instead of reporting an assert below.
     if (MaxWGSize <= 1)
-      throw sycl::exception(make_error_code(errc::nd_range),
+      throw sycl::exception(sycl::errc::invalid,
                             "The implementation handling parallel_for with "
                             "reduction requires the maximal work group "
                             "size to be greater than 1 to converge. "
@@ -2586,7 +2583,7 @@ template <> struct NDRangeReduction<reduction::strategy::multi> {
     // for the device.
     size_t MaxWGSize = reduGetMaxWGSize(Queue, LocalMemPerWorkItem);
     if (NDRange.get_local_range().size() > MaxWGSize)
-      throw sycl::exception(make_error_code(errc::nd_range),
+      throw sycl::exception(sycl::errc::invalid,
                             "The implementation handling parallel_for with"
                             " reduction requires work group size not bigger"
                             " than " +

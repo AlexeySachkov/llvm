@@ -75,7 +75,7 @@ public:
         aligned_alloc(getAlignment(), NumberOfElements * sizeof(value_type),
                       MDevice, MContext, AllocKind, MPropList, CodeLoc));
     if (!Result) {
-      throw memory_allocation_error();
+      throw sycl::exception(sycl::errc::memory_allocation);
     }
     return Result;
   }

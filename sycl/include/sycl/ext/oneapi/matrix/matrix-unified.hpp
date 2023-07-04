@@ -38,8 +38,8 @@ struct joint_matrix {
 
   joint_matrix() {
 #ifndef __SYCL_DEVICE_ONLY__
-    throw runtime_error("joint matrix is not supported on host device.",
-                        PI_ERROR_INVALID_DEVICE);
+    throw sycl::exception(sycl::errc::invalid,
+                          "joint matrix is not supported on host.");
 #endif
   }
 #ifdef __SYCL_DEVICE_ONLY__
@@ -81,9 +81,8 @@ public:
 #if defined(__NVPTX__)
     return jm.cuda_impl.wi_marray.size();
 #else
-    throw runtime_error("get_wi_data is available using: "
-                        "ext::intel::experimental::matrix::get_wi_data.",
-                        PI_ERROR_INVALID_DEVICE);
+    throw sycl::exception(sycl::errc::invalid, "get_wi_data is available using: "
+                        "ext::intel::experimental::matrix::get_wi_data.");
 #endif
   };
 
@@ -91,9 +90,8 @@ public:
 #if defined(__NVPTX__)
     return (jm.cuda_impl.wi_marray[i]);
 #else
-    throw runtime_error("get_wi_data is available using: "
-                        "ext::intel::experimental::matrix::get_wi_data.",
-                        PI_ERROR_INVALID_DEVICE);
+    throw sycl::exception(sycl::errc::invalid, "get_wi_data is available using: "
+                        "ext::intel::experimental::matrix::get_wi_data.");
 #endif
   };
 };

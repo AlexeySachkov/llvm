@@ -43,11 +43,11 @@ int main() {
     sycl::accessor<char, 1, sycl::access::mode::read> CapturedAcc1,
         CapturedAcc2;
     cgh.single_task<class Kernel2>([=]() {
-      Data;
-      CapturedAcc1;
-      CapturedAcc2;
-      NestedSimpleObj;
-      NestedComplexObj;
+      (void)Data;
+      (void)CapturedAcc1;
+      (void)CapturedAcc2;
+      (void)NestedSimpleObj;
+      (void)NestedComplexObj;
     });
   });
 

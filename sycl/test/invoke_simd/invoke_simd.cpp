@@ -45,18 +45,15 @@ ESIMD_CALLEE(float *A, esimd::simd<float, VL> b, int i) SYCL_ESIMD_FUNCTION {
 
 float SPMD_CALLEE(float *A, float b, int i) { return A[i] + b; }
 
-class ESIMDSelector : public device_selector {
+struct ESIMDSelector  {
   // Require GPU device unless HOST is requested in SYCL_DEVICE_FILTER env
-  virtual int operator()(const device &device) const {
+  int operator()(const device &device) const {
     if (const char *dev_filter = getenv("SYCL_DEVICE_FILTER")) {
       std::string filter_string(dev_filter);
       if (filter_string.find("gpu") != std::string::npos)
         return device.is_gpu() ? 1000 : -1;
-      if (filter_string.find("host") != std::string::npos)
-        return device.is_host() ? 1000 : -1;
       std::cerr
-          << "Supported 'SYCL_DEVICE_FILTER' env var values are 'gpu' and "
-             "'host', '"
+          << "Supported 'SYCL_DEVICE_FILTER' env var values are 'gpu', '"
           << filter_string << "' does not contain such substrings.\n";
       return -1;
     }
@@ -117,7 +114,7 @@ int main(void) {
             sub_group sg = ndi.get_sub_group();
             group<1> g = ndi.get_group();
             uint32_t i =
-                sg.get_group_linear_id() * VL + g.get_linear_id() * GroupSize;
+                sg.get_group_linear_id() * VL + g.get_group_linear_id() * GroupSize;
             uint32_t wi_id = i + sg.get_local_id();
             float res = 0;
 
@@ -134,7 +131,7 @@ int main(void) {
     e.wait();
   } catch (sycl::exception const &e) {
     std::cout << "SYCL exception caught: " << e.what() << '\n';
-    return e.get_cl_code();
+    return e.code().value();
   }
 
   int err_cnt = 0;

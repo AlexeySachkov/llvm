@@ -237,5 +237,5 @@ int main() {
   s::multi_ptr<int, s::access::address_space::global_space,
                s::access::decorated::yes>
       mp;
-  int *dp = mp;
+  int *dp = mp.get();
 }

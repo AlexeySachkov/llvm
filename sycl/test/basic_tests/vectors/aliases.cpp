@@ -1,4 +1,4 @@
-// RUN: %clangxx -fsycl -fsyntax-only -fsycl-device-only %s
+// RUN: %clangxx -fsycl -fsyntax-only -fsycl-device-only -Wno-deprecated-declarations %s
 
 #include <sycl/sycl.hpp>
 

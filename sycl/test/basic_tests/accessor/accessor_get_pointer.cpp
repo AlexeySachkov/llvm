@@ -1,4 +1,4 @@
-// RUN: %clangxx -fsycl -fsycl-targets=%sycl_triple %s -fsyntax-only
+// RUN: %clangxx -fsycl -fsycl-targets=%sycl_triple %s -fsyntax-only -Wno-deprecated-declarations
 
 #include <cassert>
 #include <sycl/sycl.hpp>

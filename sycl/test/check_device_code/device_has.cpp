@@ -49,7 +49,7 @@ public:
     func1();
     func2();
     func3();
-    func4<sycl::aspect::host>();
+    func4<sycl::aspect::host_debuggable>();
     func5();
     func6();
   }

@@ -1,4 +1,4 @@
-// RUN: %clangxx -fsycl -fsyntax-only %s
+// RUN: %clangxx -fsycl -fsyntax-only -Wno-deprecated-declarations %s
 //==------- addrspace_exposure.cpp - SYCL accessor AS exposure test --------==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
