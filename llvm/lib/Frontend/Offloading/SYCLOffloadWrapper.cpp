@@ -202,18 +202,13 @@ struct Wrapper {
   ///    // version of this structure - for backward compatibility;
   ///    // all modifications which change order/type/offsets of existing fields
   ///    // should increment the version.
-  ///    uint16_t Version;
   ///    uint16_t NumDeviceImages;
   ///    __sycl.tgt_device_image *DeviceImages;
-  ///    // the offload entry table
-  ///    __tgt_offload_entry *HostEntriesBegin;
-  ///    __tgt_offload_entry *HostEntriesEnd;
   ///  };
   /// \endcode
   StructType *getSyclBinDescTy() {
     return StructType::create(
-        {Type::getInt16Ty(C), Type::getInt16Ty(C), PointerType::getUnqual(C),
-         PointerType::getUnqual(C), PointerType::getUnqual(C)},
+        {Type::getInt16Ty(C), PointerType::getUnqual(C)},
         "__sycl.tgt_bin_desc");
   }
 
@@ -531,63 +526,47 @@ struct Wrapper {
 
   Constant *wrapImage(const SYCLImage &Image, Twine ImageID,
                       StringRef OffloadKindTag) {
-    auto *NullPtr = Constant::getNullValue(PointerType::getUnqual(C));
-    // DeviceImageStructVersion change log:
-    // -- version 2: updated to PI 1.2 binary image format
-    constexpr uint16_t DeviceImageStructVersion = 2;
-    constexpr uint8_t SYCLOffloadKind = 4; // Corresponds to SYCL
-    auto *Version =
-        ConstantInt::get(Type::getInt16Ty(C), DeviceImageStructVersion);
-    auto *Kind = ConstantInt::get(Type::getInt8Ty(C), SYCLOffloadKind);
-    auto *Format = ConstantInt::get(Type::getInt8Ty(C),
-                                    binaryImageFormatToInt8(Image.Format));
-    auto *Target = addStringToModule(Image.Target, Twine(OffloadKindTag) +
-                                                       "target." + ImageID);
-    auto *CompileOptions =
-        addStringToModule(Options.CompileOptions,
-                          Twine(OffloadKindTag) + "opts.compile." + ImageID);
-    auto *LinkOptions = addStringToModule(
-        Options.LinkOptions, Twine(OffloadKindTag) + "opts.link." + ImageID);
+    llvm::object::OffloadBinary::OffloadingImage TheImage{};
+    // TODO: figure out what is the right kind to set here
+    TheImage.TheImageKind = llvm::object::IMG_Bitcode;
+    TheImage.TheOffloadKind = llvm::object::OFK_SYCL;
+    TheImage.StringData["SYCL/compile options"] = Options.CompileOptions;
+    TheImage.StringData["SYCL/link opetions"] = Options.LinkOptions;
+    TheImage.StringData["SYCL/target"] = Image.Target;
+    TheImage.Image = std::move(Image.Image);
 
-    std::pair<Constant *, Constant *> PropSets =
-        addPropertySetRegistry(Image.PropertyRegistry);
-
-    std::pair<Constant *, Constant *> Binary;
-    if (Image.Target == "native_cpu")
-      Binary = addDeclarationsForNativeCPU(Image.Entries);
-    else {
-      auto &MB = *Image.Image;
-      Binary = addDeviceImageToModule(
-          ArrayRef<char>(MB.getBufferStart(), MB.getBufferEnd()),
-          Twine(OffloadKindTag) + ImageID + ".data", Image.Target);
+    for (const auto &It : Image.PropertyRegistry) {
+      StringRef Category = It.first;
+      for (const auto &PropIt : It.second) {
+        StringRef PropName = PropIt.first;
+        StringRef PropValue = PropIt.second.getAsString();
+        // FIXME: use SmallString
+        std::string Key = std::string("SYCL/") + std::string(Category) + std::string("/") + std::string(PropName);
+        TheImage.StringData[Key] = PropValue;
+      }
     }
 
-    // TODO: Manifests are going to be removed.
-    // Note: Manifests are deprecated but corresponding nullptr fields should
-    // remain to comply ABI.
-    std::pair<Constant *, Constant *> Manifests = {NullPtr, NullPtr};
+    // TODO: special case for native cpu device
+    auto MB = MemoryBuffer::getMemBufferCopy(
+        llvm::object::OffloadBinary::write(TheImage));
 
-    // For SYCL image offload entries are defined here, by wrapper, so
-    // those are created per image
-    std::pair<Constant *, Constant *> ImageEntriesPtrs =
-        addOffloadEntriesToModule(Image.Entries);
-    Constant *WrappedImage = ConstantStruct::get(
-        SyclDeviceImageTy, Version, Kind, Format, Target, CompileOptions,
-        LinkOptions, Manifests.first, Manifests.second, Binary.first,
-        Binary.second, ImageEntriesPtrs.first, ImageEntriesPtrs.second,
-        PropSets.first, PropSets.second);
+    std::pair<Constant *, Constant *> Binary;
+    Binary = addDeviceImageToModule(
+        ArrayRef<char>(MB->getBufferStart(), MB->getBufferEnd()),
+        Twine(OffloadKindTag) + ImageID + ".data", Image.Target);
 
     if (Options.EmitRegistrationFunctions)
-      emitRegistrationFunctions(Binary.first, Image.Image->getBufferSize(),
+      emitRegistrationFunctions(Binary.first, MB->getBufferSize(),
                                 ImageID, OffloadKindTag);
 
-    return WrappedImage;
+    return Binary.first;
   }
 
   GlobalVariable *combineWrappedImages(ArrayRef<Constant *> WrappedImages,
                                        StringRef OffloadKindTag) {
     auto *ImagesData = ConstantArray::get(
-        ArrayType::get(SyclDeviceImageTy, WrappedImages.size()), WrappedImages);
+        ArrayType::get(WrappedImages.front()->getType(), WrappedImages.size()),
+        WrappedImages);
     auto *ImagesGV =
         new GlobalVariable(M, ImagesData->getType(), /*isConstant*/ true,
                            GlobalValue::InternalLinkage, ImagesData,
@@ -599,15 +578,9 @@ struct Wrapper {
     auto *ImagesB = ConstantExpr::getGetElementPtr(ImagesGV->getValueType(),
                                                    ImagesGV, ZeroZero);
 
-    // And finally create the binary descriptor object.
-    Constant *EntriesB = Constant::getNullValue(PointerType::getUnqual(C));
-    Constant *EntriesE = Constant::getNullValue(PointerType::getUnqual(C));
-    static constexpr uint16_t BinDescStructVersion = 1;
     auto *DescInit = ConstantStruct::get(
         SyclBinDescTy,
-        ConstantInt::get(Type::getInt16Ty(C), BinDescStructVersion),
-        ConstantInt::get(Type::getInt16Ty(C), WrappedImages.size()), ImagesB,
-        EntriesB, EntriesE);
+        ConstantInt::get(Type::getInt16Ty(C), WrappedImages.size()), ImagesB);
 
     return new GlobalVariable(M, DescInit->getType(), /*isConstant*/ true,
                               GlobalValue::InternalLinkage, DescInit,
@@ -662,11 +635,8 @@ struct Wrapper {
   /// };
   ///
   /// static const __sycl.tgt_bin_desc FatbinDesc = {
-  ///   Version,                             /*Version*/
   ///   sizeof(Images) / sizeof(Images[0]),  /*NumDeviceImages*/
   ///   Images,                              /*DeviceImages*/
-  ///   __start_offloading_entries,      /*HostEntriesBegin*/
-  ///   __stop_offloading_entries        /*HostEntriesEnd*/
   /// };
   /// \endcode
   ///
@@ -692,7 +662,7 @@ struct Wrapper {
         FunctionType::get(Type::getVoidTy(C), PointerType::getUnqual(C),
                           /*isVarArg=*/false);
     FunctionCallee RegFuncC =
-        M.getOrInsertFunction("__sycl_register_lib", RegFuncTy);
+        M.getOrInsertFunction("__sycl_register_lib_new", RegFuncTy);
 
     // Construct function body
     IRBuilder Builder(BasicBlock::Create(C, "entry", Func));
@@ -714,7 +684,7 @@ struct Wrapper {
         FunctionType::get(Type::getVoidTy(C), PointerType::getUnqual(C),
                           /*isVarArg=*/false);
     FunctionCallee UnRegFuncC =
-        M.getOrInsertFunction("__sycl_unregister_lib", UnRegFuncTy);
+        M.getOrInsertFunction("__sycl_unregister_lib_new", UnRegFuncTy);
 
     // Construct function body
     IRBuilder<> Builder(BasicBlock::Create(C, "entry", Func));
@@ -739,5 +709,6 @@ Error llvm::offloading::wrapSYCLBinaries(llvm::Module &M,
 
   W.createRegisterFatbinFunction(Desc);
   W.createUnregisterFunction(Desc);
+  M.dump();
   return Error::success();
 }

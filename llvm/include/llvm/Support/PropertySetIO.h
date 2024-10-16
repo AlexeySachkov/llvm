@@ -135,6 +135,11 @@ public:
       llvm_unreachable("must be BYTE_ARRAY value");
     return Val.ByteArrayVal + sizeof(SizeTy);
   }
+  const StringRef getAsString() const {
+    const byte *Ptr = (Ty == BYTE_ARRAY)
+        ? Val.ByteArrayVal : reinterpret_cast<const byte *>(&Val.UInt32Val);
+    return StringRef(reinterpret_cast<const char *>(Ptr), size());
+  }
 
   bool isValid() const { return getType() != NONE; }
 

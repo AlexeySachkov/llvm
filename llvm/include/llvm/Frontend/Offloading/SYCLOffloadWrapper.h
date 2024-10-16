@@ -44,7 +44,8 @@ struct SYCLImage {
         Entries(Entries.begin(), Entries.size()),
         Target(Target.begin(), Target.size()) {}
 
-  std::unique_ptr<llvm::MemoryBuffer> Image;
+  // FIXME: mutable hack
+  mutable std::unique_ptr<llvm::MemoryBuffer> Image;
   llvm::util::PropertySetRegistry PropertyRegistry;
 
   std::string Entries;
