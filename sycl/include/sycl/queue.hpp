@@ -34,7 +34,6 @@
 #include <sycl/ext/oneapi/properties/properties.hpp>    // for empty_properti...
 #include <sycl/handler.hpp>                             // for handler, isDev...
 #include <sycl/id.hpp>                                  // for id
-#include <sycl/kernel.hpp>                              // for auto_name
 #include <sycl/kernel_handler.hpp>                      // for kernel_handler
 #include <sycl/nd_range.hpp>                            // for nd_range
 #include <sycl/property_list.hpp>                       // for property_list
@@ -76,6 +75,7 @@ auto get_native(const SyclObjectT &Obj)
 
 namespace detail {
 class queue_impl;
+class auto_name;
 
 #if __SYCL_USE_FALLBACK_ASSERT
 inline event submitAssertCapture(queue &, event &, queue *,

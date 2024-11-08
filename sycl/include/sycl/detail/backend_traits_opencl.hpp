@@ -23,7 +23,6 @@
 #include <sycl/device.hpp>                // for device
 #include <sycl/event.hpp>                 // for event
 #include <sycl/handler.hpp>               // for buffer
-#include <sycl/kernel.hpp>                // for kernel
 #include <sycl/kernel_bundle.hpp>         // for kernel_bundle
 #include <sycl/kernel_bundle_enums.hpp>   // for bundle_state
 #include <sycl/platform.hpp>              // for platform
@@ -33,6 +32,9 @@
 
 namespace sycl {
 inline namespace _V1 {
+
+class kernel;
+
 namespace detail {
 
 // TODO the interops for context, device, event, platform and program

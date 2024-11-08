@@ -16,7 +16,7 @@
 #include <sycl/detail/string_view.hpp>
 #include <sycl/detail/ur.hpp>           // for cast
 #include <sycl/device.hpp>              // for device
-#include <sycl/kernel.hpp>              // for kernel, kernel_bundle
+#include <sycl/kernel.hpp>
 #include <sycl/kernel_bundle_enums.hpp> // for bundle_state
 #include <sycl/property_list.hpp>       // for property_list
 #include <ur_api.h>                     // for ur_native_handle_t
@@ -42,6 +42,8 @@ namespace sycl {
 inline namespace _V1 {
 // Forward declaration
 template <backend Backend> class backend_traits;
+template <bundle_state Steat>
+class kernel_bundle;
 template <backend Backend, bundle_state State>
 auto get_native(const kernel_bundle<State> &Obj)
     -> backend_return_t<Backend, kernel_bundle<State>>;

@@ -29,7 +29,6 @@
 #include <sycl/group_algorithm.hpp>                 // for reduce_ov...
 #include <sycl/handler.hpp>                         // for handler
 #include <sycl/id.hpp>                              // for getDeline...
-#include <sycl/kernel.hpp>                          // for auto_name
 #include <sycl/known_identity.hpp>                  // for IsKnownId...
 #include <sycl/marray.hpp>                          // for marray
 #include <sycl/memory_enums.hpp>                    // for memory_order
@@ -77,6 +76,8 @@ template <typename T, class BinaryOperation, int Dims, size_t Extent,
 class reducer;
 
 namespace detail {
+
+class auto_name;
 
 #ifdef SYCL_DETERMINISTIC_REDUCTION
 // Act as if all operators require determinism.

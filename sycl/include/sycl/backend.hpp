@@ -25,7 +25,6 @@
 #include <sycl/feature_test.hpp>              // for SYCL_BACKEND_OP...
 #include <sycl/handler.hpp>                   // for buffer
 #include <sycl/image.hpp>                     // for image, image_al...
-#include <sycl/kernel.hpp>                    // for kernel, get_native
 #include <sycl/kernel_bundle.hpp>             // for kernel_bundle
 #include <sycl/kernel_bundle_enums.hpp>       // for bundle_state
 #include <sycl/platform.hpp>                  // for platform, get_n...
@@ -59,6 +58,8 @@
 
 namespace sycl {
 inline namespace _V1 {
+
+class kernel;
 
 namespace detail {
 // TODO each backend can have its own custom errc enumeration

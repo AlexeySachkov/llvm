@@ -24,7 +24,6 @@
 #include <sycl/event.hpp>                                   // for event
 #include <sycl/ext/oneapi/backend/level_zero_ownership.hpp> // for ownership
 #include <sycl/image.hpp>                                   // for image
-#include <sycl/kernel.hpp>                                  // for kernel
 #include <sycl/kernel_bundle.hpp>                           // for kernel_bu...
 #include <sycl/kernel_bundle_enums.hpp>                     // for bundle_state
 #include <sycl/platform.hpp>                                // for platform
@@ -40,6 +39,7 @@
 
 namespace sycl {
 inline namespace _V1 {
+class kernel;
 namespace ext::oneapi::level_zero::detail {
 __SYCL_EXPORT device make_device(const platform &Platform,
                                  ur_native_handle_t NativeHandle);

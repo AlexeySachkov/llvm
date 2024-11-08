@@ -15,7 +15,6 @@
 #include <sycl/device.hpp>                      // for device
 #include <sycl/event.hpp>                       // for event
 #include <sycl/ext/oneapi/weak_object.hpp>      // for weak_object
-#include <sycl/kernel.hpp>                      // for kernel
 #include <sycl/kernel_bundle.hpp>               // for kernel_id
 #include <sycl/kernel_bundle_enums.hpp>         // for bundle_state
 #include <sycl/platform.hpp>                    // for platform
@@ -25,6 +24,9 @@
 
 namespace sycl {
 inline namespace _V1 {
+
+class kernel;
+
 namespace ext::oneapi {
 
 namespace detail {
