@@ -16,7 +16,6 @@
 #include <sycl/exception.hpp>          // for make_error_code, errc, exception
 #include <sycl/functional.hpp>         // for plus, multiplies, maximum
 #include <sycl/group.hpp>              // for group
-#include <sycl/half_type.hpp>          // for half
 #include <sycl/id.hpp>                 // for id
 #include <sycl/known_identity.hpp>     // for known_identity_v
 #include <sycl/nd_item.hpp>            // for nd_item

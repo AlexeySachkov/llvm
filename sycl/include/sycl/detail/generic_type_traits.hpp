@@ -9,11 +9,10 @@
 #pragma once
 
 #include <sycl/access/access.hpp>             // for decorated, address_space
-#include <sycl/aliases.hpp>                   // for half, cl_char, cl_double
+#include <sycl/aliases.hpp>                   // for cl_char, cl_double
 #include <sycl/detail/helpers.hpp>            // for marray
 #include <sycl/detail/type_list.hpp>          // for is_contained, find_sam...
 #include <sycl/detail/type_traits.hpp>        // for is_gen_based_on_type_s...
-#include <sycl/half_type.hpp>                 // for BIsRepresentationT
 #include <sycl/multi_ptr.hpp>                 // for multi_ptr, address_spa...
 
 #include <sycl/ext/oneapi/bfloat16.hpp> // for bfloat16 storage type.
@@ -25,6 +24,10 @@
 
 namespace sycl {
 inline namespace _V1 {
+namespace detail::half_impl {
+class half;
+}
+using half = detail::half_impl::half;
 namespace detail {
 template <typename T>
 using is_byte = typename

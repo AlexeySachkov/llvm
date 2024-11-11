@@ -11,7 +11,6 @@
 #include <sycl/aliases.hpp>
 #include <sycl/detail/common.hpp>
 #include <sycl/detail/is_device_copyable.hpp>
-#include <sycl/half_type.hpp>
 
 #include <array>
 #include <cstddef>
@@ -23,6 +22,10 @@ namespace sycl {
 inline namespace _V1 {
 
 template <typename DataT, std::size_t N> class marray;
+namespace detail::half_impl {
+class half;
+} // namespace detail::half_impl
+using half = detail::half_impl::half;
 
 namespace detail {
 
