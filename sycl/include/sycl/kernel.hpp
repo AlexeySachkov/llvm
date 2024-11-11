@@ -185,6 +185,13 @@ private:
       typename detail::is_kernel_info_desc<Param>::return_type>
   get_info_impl() const;
 };
+
+namespace detail {
+kernel kernel_bundle_plain::ext_oneapi_get_kernel(std::string &name) {
+  return ext_oneapi_get_kernel(detail::string_view{name});
+}
+} // namespace detail
+
 } // namespace _V1
 } // namespace sycl
 

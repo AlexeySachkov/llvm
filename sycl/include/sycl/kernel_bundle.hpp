@@ -16,7 +16,6 @@
 #include <sycl/detail/string_view.hpp>
 #include <sycl/detail/ur.hpp>           // for cast
 #include <sycl/device.hpp>              // for device
-#include <sycl/kernel.hpp>
 #include <sycl/kernel_bundle_enums.hpp> // for bundle_state
 #include <sycl/property_list.hpp>       // for property_list
 #include <ur_api.h>                     // for ur_native_handle_t
@@ -41,6 +40,7 @@
 namespace sycl {
 inline namespace _V1 {
 // Forward declaration
+class kernel;
 template <backend Backend> class backend_traits;
 template <bundle_state Steat>
 class kernel_bundle;
@@ -198,9 +198,8 @@ public:
     return ext_oneapi_has_kernel(detail::string_view{name});
   }
 
-  kernel ext_oneapi_get_kernel(const std::string &name) {
-    return ext_oneapi_get_kernel(detail::string_view{name});
-  }
+  // Out-of-class definition in kernel.hpp
+  kernel ext_oneapi_get_kernel(const std::string &name);
 
 protected:
   // \returns a kernel object which represents the kernel identified by
