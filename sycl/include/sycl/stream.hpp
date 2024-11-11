@@ -11,7 +11,6 @@
 #include <sycl/access/access.hpp>  // for target, mode, address_space
 #include <sycl/accessor.hpp>       // for accessor
 #include <sycl/aliases.hpp>        // for half
-#include <sycl/atomic.hpp>         // for atomic
 #include <sycl/builtins.hpp>       // for isinf, isnan, signbit
 #include <sycl/detail/array.hpp>   // for array
 #include <sycl/detail/defines.hpp> // for __SYCL_SPECIAL_CLASS, __S...

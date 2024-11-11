@@ -11,7 +11,6 @@
 #include <sycl/access/access.hpp>                   // for address_s...
 #include <sycl/accessor.hpp>                        // for local_acc...
 #include <sycl/aspects.hpp>                         // for aspect
-#include <sycl/atomic.hpp>                          // for IsValidAt...
 #include <sycl/atomic_ref.hpp>                      // for atomic_ref
 #include <sycl/buffer.hpp>                          // for buffer
 #include <sycl/builtins.hpp>                        // for min
@@ -96,7 +95,7 @@ using IsReduOptForFastAtomicFetch =
     std::bool_constant<!IsDeterministicOperator<BinaryOperation>::value &&
                        ((is_sgenfloat_v<T> && sizeof(T) == 4) ||
                         is_sgeninteger_v<T>) &&
-                       IsValidAtomicType<T>::value &&
+                       IsValidAtomicRefType<T>::value &&
                        (IsPlus<T, BinaryOperation>::value ||
                         IsMinimum<T, BinaryOperation>::value ||
                         IsMaximum<T, BinaryOperation>::value ||
