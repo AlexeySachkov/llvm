@@ -11,6 +11,7 @@
 #include <sycl/aspects.hpp>
 #include <sycl/event.hpp>
 #include <sycl/handler.hpp>
+#include <sycl/handler_access.hpp>
 #include <sycl/properties/queue_properties.hpp>
 #include <sycl/queue.hpp>
 

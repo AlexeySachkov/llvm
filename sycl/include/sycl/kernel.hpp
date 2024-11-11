@@ -187,10 +187,25 @@ private:
 };
 
 namespace detail {
-kernel kernel_bundle_plain::ext_oneapi_get_kernel(std::string &name) {
+kernel kernel_bundle_plain::ext_oneapi_get_kernel(const std::string &name) {
   return ext_oneapi_get_kernel(detail::string_view{name});
 }
+
+__SYCL_EXPORT kernel make_kernel(
+    const context &TargetContext,
+    const kernel_bundle<bundle_state::executable> &KernelBundle,
+    ur_native_handle_t NativeKernelHandle, bool KeepOwnership, backend Backend);
 } // namespace detail
+
+template <backend Backend>
+kernel
+make_kernel(const typename backend_traits<Backend>::template input_type<kernel>
+                &BackendObject,
+            const context &TargetContext) {
+  return detail::make_kernel(
+      detail::ur::cast<ur_native_handle_t>(BackendObject), TargetContext,
+      Backend);
+}
 
 } // namespace _V1
 } // namespace sycl

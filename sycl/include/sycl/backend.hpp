@@ -23,7 +23,6 @@
 #include <sycl/event.hpp>                     // for event, get_native
 #include <sycl/exception.hpp>                 // for make_error_code
 #include <sycl/feature_test.hpp>              // for SYCL_BACKEND_OP...
-#include <sycl/handler.hpp>                   // for buffer
 #include <sycl/image.hpp>                     // for image, image_al...
 #include <sycl/kernel_bundle.hpp>             // for kernel_bundle
 #include <sycl/kernel_bundle_enums.hpp>       // for bundle_state
@@ -403,16 +402,6 @@ make_image(const typename backend_traits<Backend>::template input_type<
   return image<Dimensions, AllocatorT>(
       detail::ur::cast<ur_native_handle_t>(BackendObject), TargetContext,
       AvailableEvent);
-}
-
-template <backend Backend>
-kernel
-make_kernel(const typename backend_traits<Backend>::template input_type<kernel>
-                &BackendObject,
-            const context &TargetContext) {
-  return detail::make_kernel(
-      detail::ur::cast<ur_native_handle_t>(BackendObject), TargetContext,
-      Backend);
 }
 
 template <backend Backend, bundle_state State>

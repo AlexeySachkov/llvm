@@ -3696,20 +3696,5 @@ protected:
   void depends_on(const std::vector<detail::EventImplPtr> &Events);
 };
 
-namespace detail {
-class HandlerAccess {
-public:
-  static void internalProfilingTagImpl(handler &Handler) {
-    Handler.internalProfilingTagImpl();
-  }
-
-  template <typename RangeT, typename PropertiesT>
-  static void parallelForImpl(handler &Handler, RangeT Range, PropertiesT Props,
-                              kernel Kernel) {
-    Handler.parallel_for_impl(Range, Props, Kernel);
-  }
-};
-} // namespace detail
-
 } // namespace _V1
 } // namespace sycl

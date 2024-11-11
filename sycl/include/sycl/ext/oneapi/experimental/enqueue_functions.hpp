@@ -15,6 +15,7 @@
 #include <sycl/ext/oneapi/experimental/graph.hpp>
 #include <sycl/ext/oneapi/properties/properties.hpp>
 #include <sycl/handler.hpp>
+#include <sycl/handler_access.hpp>
 #include <sycl/nd_range.hpp>
 #include <sycl/queue.hpp>
 #include <sycl/range.hpp>
