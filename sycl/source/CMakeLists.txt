@@ -49,6 +49,10 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
       OpenCL-Headers
   )
 
+  add_dependencies(${LIB_OBJ_NAME}
+    sycl-headers
+  )
+
   # Common link step setup
 
   add_library(${LIB_NAME} SHARED
@@ -64,6 +68,55 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
       $<$<NOT:$<BOOL:${WIN32}>>:UnifiedRuntimeLoader>
       $<$<BOOL:${WIN32}>:shlwapi>
   )
+
+  set_target_properties(${LIB_NAME}
+    PROPERTIES
+      VERSION ${SYCL_VERSION_STRING}
+      SOVERSION ${SYCL_MAJOR_VERSION}
+      LINKER_LANUGAGE CXX
+  )
+
+  # Combined compilation + link step setup (for more complicated things)
+
+  add_common_options(${LIB_NAME} ${LIB_OBJ_NAME})
+
+  # ur_win_proxy_loader
+  if (WIN32)
+    include_directories(${LLVM_EXTERNAL_SYCL_SOURCE_DIR}/ur_win_proxy_loader)
+    if(WIN_DUPE)
+      target_link_libraries(${LIB_NAME} PUBLIC ur_win_proxy_loaderd)
+      set(MANIFEST_FILE_NAME "sycld.manifest")
+    else()
+      target_link_libraries(${LIB_NAME} PUBLIC ur_win_proxy_loader)
+      set(MANIFEST_FILE_NAME "sycl.manifest")
+    endif()
+    # Embed manifest into the sycl.dll where ur_win_proxy_loader.dll is described as sycl.dll's private dll and will always be loaded from the same directory.
+    # 0x2000: LOAD_LIBRARY_SAFE_CURRENT_DIRS flag. Using this flag means that loading dependency DLLs (of sycl.dll)
+    # from the current directory is only allowed if it is under a directory in the Safe load list.
+    target_link_options(${LIB_NAME} PRIVATE "LINKER:/DEPENDENTLOADFLAG:0x2000" "LINKER:/MANIFEST:NO" "LINKER:/MANIFEST:EMBED" "LINKER:/MANIFESTINPUT:${CMAKE_CURRENT_SOURCE_DIR}/${MANIFEST_FILE_NAME}")
+  endif()
+
+  if (MSVC)
+    add_stripped_pdb(${LIB_NAME})
+  endif()
+
+  if (UNIX AND NOT APPLE)
+    set(linker_script "${CMAKE_CURRENT_SOURCE_DIR}/ld-version-script.txt")
+    target_link_libraries(
+        ${LIB_NAME} PRIVATE "-Wl,--version-script=${linker_script}")
+    set_target_properties(${LIB_NAME} PROPERTIES LINK_DEPENDS ${linker_script})
+  endif()
+
+  # To facilitate better tracing and profiling except on release builds.
+  check_cxx_compiler_flag("-fno-omit-frame-pointer" CXX_HAS_NO_OMIT_FRAME_POINTER)
+  if (CXX_HAS_NO_OMIT_FRAME_POINTER)
+    target_compile_options(${LIB_NAME} PUBLIC
+      $<$<CONFIG:Debug,RelWithDebInfo>:-fno-omit-frame-pointer>
+      )
+    target_compile_options(${LIB_OBJ_NAME} PUBLIC
+      $<$<CONFIG:Debug,RelWithDebInfo>:-fno-omit-frame-pointer>
+      )
+  endif()
 
   # Feature-specific compilation and link step setup
 
@@ -84,17 +137,6 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
     target_compile_options(${LIB_NAME} PRIVATE ${CMAKE_CXX_FLAGS_DEBUG_SEPARATED})
   endif()
 
-  # To facilitate better tracing and profiling except on release builds.
-  check_cxx_compiler_flag("-fno-omit-frame-pointer" CXX_HAS_NO_OMIT_FRAME_POINTER)
-  if (CXX_HAS_NO_OMIT_FRAME_POINTER)
-    target_compile_options(${LIB_NAME} PUBLIC
-      $<$<CONFIG:Debug,RelWithDebInfo>:-fno-omit-frame-pointer>
-      )
-    target_compile_options(${LIB_OBJ_NAME} PUBLIC
-      $<$<CONFIG:Debug,RelWithDebInfo>:-fno-omit-frame-pointer>
-      )
-  endif()
-
   if (SYCL_ENABLE_COVERAGE)
     target_compile_options(${LIB_OBJ_NAME} PUBLIC
       -fprofile-instr-generate -fcoverage-mapping
@@ -111,12 +153,6 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
     target_compile_options(${LIB_OBJ_NAME} PRIVATE ${ARG_COMPILE_OPTIONS})
   endif()
 
-  add_dependencies(${LIB_OBJ_NAME}
-    sycl-headers
-  )
-
-  set_target_properties(${LIB_NAME} PROPERTIES LINKER_LANGUAGE CXX)
-
   if (SYCL_ENABLE_XPTI_TRACING)
     target_compile_definitions(${LIB_OBJ_NAME} PRIVATE XPTI_ENABLE_INSTRUMENTATION XPTI_STATIC_LIBRARY)
     target_link_libraries(${LIB_NAME} PRIVATE ${ARG_XPTI_LIB})
@@ -127,22 +163,6 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
   else()
     target_link_libraries(${LIB_NAME} PRIVATE ${zstd_STATIC_LIBRARY})
     target_include_directories(${LIB_OBJ_NAME} PRIVATE ${zstd_INCLUDE_DIR})
-  endif()
-
-  # ur_win_proxy_loader
-  if (WIN32)
-    include_directories(${LLVM_EXTERNAL_SYCL_SOURCE_DIR}/ur_win_proxy_loader)
-    if(WIN_DUPE)
-      target_link_libraries(${LIB_NAME} PUBLIC ur_win_proxy_loaderd)
-      set(MANIFEST_FILE_NAME "sycld.manifest")
-    else()
-      target_link_libraries(${LIB_NAME} PUBLIC ur_win_proxy_loader)
-      set(MANIFEST_FILE_NAME "sycl.manifest")
-    endif()
-    # Embed manifest into the sycl.dll where ur_win_proxy_loader.dll is described as sycl.dll's private dll and will always be loaded from the same directory.
-    # 0x2000: LOAD_LIBRARY_SAFE_CURRENT_DIRS flag. Using this flag means that loading dependency DLLs (of sycl.dll)
-    # from the current directory is only allowed if it is under a directory in the Safe load list.
-    target_link_options(${LIB_NAME} PRIVATE "LINKER:/DEPENDENTLOADFLAG:0x2000" "LINKER:/MANIFEST:NO" "LINKER:/MANIFEST:EMBED" "LINKER:/MANIFESTINPUT:${CMAKE_CURRENT_SOURCE_DIR}/${MANIFEST_FILE_NAME}")
   endif()
 
   if (WIN32)
@@ -158,10 +178,7 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
     endif()
   endif()
 
-  if (MSVC)
-    # Install stripped PDB
-    add_stripped_pdb(${LIB_NAME})
-  else()
+  if (NOT MSVC)
     target_compile_options(${LIB_OBJ_NAME} PUBLIC
                            -fvisibility=hidden -fvisibility-inlines-hidden)
 
@@ -169,16 +186,6 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
     # => note: the ABI for passing parameters with 32-byte alignment has changed in GCC 4.6
     # Seems to be no way to suppress it except use -Wno-psabi
     target_compile_options(${LIB_OBJ_NAME} PUBLIC -Wno-psabi)
-
-    if (UNIX AND NOT APPLE)
-      set(linker_script "${CMAKE_CURRENT_SOURCE_DIR}/ld-version-script.txt")
-      target_link_libraries(
-          ${LIB_NAME} PRIVATE "-Wl,--version-script=${linker_script}")
-      set_target_properties(${LIB_NAME} PROPERTIES LINK_DEPENDS ${linker_script})
-    endif()
-    if (SYCL_ENABLE_XPTI_TRACING)
-      target_link_libraries(${LIB_NAME} PRIVATE ${CMAKE_DL_LIBS})
-    endif()
   endif()
 
   if(SYCL_ENABLE_EXTENSION_JIT)
@@ -197,18 +204,14 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
     target_compile_definitions(${LIB_OBJ_NAME} PRIVATE SYCL_EXT_JIT_ENABLE)
   endif(SYCL_ENABLE_EXTENSION_JIT)
 
-  add_common_options(${LIB_NAME} ${LIB_OBJ_NAME})
-
-  set_target_properties(${LIB_NAME} PROPERTIES
-                        VERSION ${SYCL_VERSION_STRING}
-                        SOVERSION ${SYCL_MAJOR_VERSION})
-
   check_cxx_compiler_flag(-Winstantiation-after-specialization
     HAS_INST_AFTER_SPEC)
   if (HAS_INST_AFTER_SPEC)
     target_compile_options(${LIB_OBJ_NAME} PRIVATE
       -Winstantiation-after-specialization)
   endif()
+
+  # Misc setup
 
   # When building using icx on Windows, the VERSION file
   # produced by cmake is used in source code
