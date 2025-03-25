@@ -83,6 +83,12 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
       $<$<BOOL:${WIN32}>:shlwapi>
   )
 
+  target_link_options(
+    ${LIB_NAME}
+    PRIVATE
+      $<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:Release>>:-Wl,-z,relro>
+  )
+
   # Feature-specific compilation and link step setup
 
   # Unlike for sycl library, for LLVMSupport we have only one version for a given build,
