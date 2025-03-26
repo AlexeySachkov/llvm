@@ -83,11 +83,14 @@ function(add_sycl_rt_library LIB_NAME LIB_OBJ_NAME)
       $<$<BOOL:${WIN32}>:shlwapi>
   )
 
-  target_link_options(
-    ${LIB_NAME}
-    PRIVATE
-      $<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:Release>>:-Wl,-z,relro>
-  )
+  apply_common_extra_security_flags(${LIB_OBJ_NAME})
+  apply_common_extra_security_flags(${LIB_NAME})
+
+  # target_link_options(
+  #   ${LIB_NAME}
+  #   PRIVATE
+  #     $<$<AND:$<NOT:$<BOOL:${MSVC}>>,$<CONFIG:Release>>:-Wl,-z,relro>
+  # )
 
   # Feature-specific compilation and link step setup
 
