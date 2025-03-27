@@ -1024,6 +1024,7 @@ if(NOT LLVM_ENABLE_NEW_PASS_MANAGER)
 endif()
 
 include(HandleLLVMOptions)
+message(FATAL_ERROR ${CMAKE_CXX_FLAGS})
 
 ######
 

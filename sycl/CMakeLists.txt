@@ -562,6 +562,10 @@ set(manifest_list)
 foreach( comp ${SYCL_TOOLCHAIN_DEPLOY_COMPONENTS} )
   message( STATUS "Adding component ${comp} to deploy")
 
+  if (EXTRA_SECURITY_FLAGS)
+    apply_common_extra_security_flags(${comp})
+  endif()
+
   set (manifest_file ${CMAKE_CURRENT_BINARY_DIR}/install_manifest_${comp}.txt)
   add_custom_command(OUTPUT ${manifest_file}
     COMMAND "${CMAKE_COMMAND}"
