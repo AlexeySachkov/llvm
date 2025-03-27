@@ -25,14 +25,120 @@ macro(add_link_option_ext flag name)
 endmacro()
 
 function(apply_common_extra_security_flags target)
-  if (EXTRA_SECURITY_FLAGS STREQUAL "none")
-  # No actions.
-  elseif (EXTRA_SECURITY_FLAGS STREQUAL "default")
-    append_common_extra_security_flags()
+  set(level 0)
+  if (EXTRA_SECURITY_FLAGS STREQUAL "default")
+    set(level 1)
   elseif (EXTRA_SECURITY_FLAGS STREQUAL "sanitize")
-  add_compile_option_ext("-Wformat" target)
-  add_compile_option_ext("-Wformat-security" target)
-  add_compile_option_ext("-Werror=format-security" target)
+    set(level 2)
+  endif()
+
+  set(is_gcc FALSE)
+  set(is_clang FALSE)
+  set(is_icpx FALSE)
+  set(is_msvc FALSE)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    set(is_gcc TRUE)
+  endif()
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(is_clang TRUE)
+  endif()
+  if (CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+    set(is_icpx TRUE)
+  endif()
+  if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set(is_msvc TRUE)
+  endif()
+
+  # TODO: check if any of MSVC flags are actually link flags
+
+  if (level GREATER_EQUAL 1) # default
+    # Enable  all necessary warnings
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      add_compile_option_ext("-Wall" ${target})
+      add_compile_option_ext("-Wextra" ${target})
+      add_compile_option_ext("-Wconversion" ${target})
+      add_compile_option_ext("-Wimplicit-fallthrough" ${target})
+    elseif (is_msvc OR (is_icpx AND WIN32))
+      add_compile_option_ext("/W4" ${target})
+    endif()
+
+    # Control flow integrity
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      add_compile_option_ext("-fcf-protection=full" ${target})
+    elseif (is_icpx AND WIN32)
+      add_compile_option_ext("/Qcf-protection:full" ${target})
+    elseif (is_msvc)
+      add_compile_option_ext("/LTCG" ${target})
+      add_compile_option_ext("/sdl" ${target})
+      add_compile_option_ext("/guard:cf" ${target})
+      add_compile_option_ext("/CETCOMPAT" ${target})
+    endif()
+
+    # Format string defence
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      add_compile_option_ext("-Wformat" ${target})
+      add_compile_option_ext("-Wformat-security" ${target})
+      add_compile_option_ext("-Werror=format-security" ${target})
+    elseif (is_icpx AND WIN32)
+      add_compile_option_ext("/Wformat" ${target})
+      add_compile_option_ext("/Wformat-security" ${target})
+    elseif (is_msvc)
+      add_compile_option_ext("/analyze" ${target})
+    endif()
+
+    # Inexecutable stack
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      # TODO: link flags -Wl,-z,noexecstack
+    endif()
+
+    # Position independent code
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      add_compile_option_ext("-fPIC" ${target})
+    elseif (is_msvc)
+      add_compile_option_ext("/Gy" ${target})
+    endif()
+
+    # Position independent execution
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      add_compile_option_ext("-fPIE" ${target})
+      # TODO: -pie link flag
+    elseif (is_msvc)
+      add_compile_option_ext("/DYNAMICBASE" ${target})
+      add_compile_option_ext("/NXCOMPAT" ${target})
+    endif()
+
+    # Preprocessor macro
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      target_compile_definitions(${target}
+        PRIVATE
+          _FORTIFY_SOURCE=3
+          _GLIBCXX_ASSERTIONS
+      )
+    endif()
+
+    # Read-only relocation
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      # TODO: -Wl,-z,relro link flag
+    endif()
+
+    # Stack and heap overlap protection
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      # TODO: -Wl,-z,now link flag
+      # TODO: -Wl,-z,nodlopen link flag
+    endif()
+
+    # Stack protection
+    if (is_clang OR is_gcc OR (is_icpx AND NOT WIN32))
+      add_compile_option_ext("-fstack-protector-strong" ${target})
+      add_compile_option_ext("-fstack-clash-protection" ${target})
+    elseif (is_msvc)
+      add_compile_option_ext("/GS" ${target})
+    endif()
+  endif()
+
+  if (level GREATER_EQUAL 2) # sanitize
+    # TODO: -fsanitize=cfi
+  endif()
 endfunction()
 
 function(append_common_extra_security_flags)
