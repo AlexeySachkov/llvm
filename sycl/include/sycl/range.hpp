@@ -38,20 +38,20 @@ public:
   /* The following constructor is only available in the range class
   specialization where: Dimensions==1 */
   template <int N = Dimensions>
-  range(typename std::enable_if_t<(N == 1), size_t> dim0) : base(dim0) {}
+  range(typename std::enable_if_t<(N == 1), size_t> dim0) : base{dim0} {}
 
   /* The following constructor is only available in the range class
   specialization where: Dimensions==2 */
   template <int N = Dimensions>
   range(typename std::enable_if_t<(N == 2), size_t> dim0, size_t dim1)
-      : base(dim0, dim1) {}
+      : base{dim0, dim1} {}
 
   /* The following constructor is only available in the range class
   specialization where: Dimensions==3 */
   template <int N = Dimensions>
   range(typename std::enable_if_t<(N == 3), size_t> dim0, size_t dim1,
         size_t dim2)
-      : base(dim0, dim1, dim2) {}
+      : base{dim0, dim1, dim2} {}
 
   size_t size() const {
     size_t size = 1;

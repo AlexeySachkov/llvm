@@ -8,10 +8,10 @@
 
 #pragma once
 
+#include <sycl/detail/array.hpp>
 #include <sycl/detail/defines_elementary.hpp> // for __SYCL_ALWAYS_INLINE
 #include <sycl/detail/export.hpp>             // for __SYCL_EXPORT
 
-#include <array>       // for array
 #include <cassert>     // for assert
 #include <cstddef>     // for size_t
 #include <string>      // for allocator, operator+
@@ -311,17 +311,17 @@ static T<NewDim> convertToArrayOfN(T<OldDim> OldObj) {
   return NewObj;
 }
 
-// Helper function for concatenating two std::array.
+// Helper function for concatenating two detail::array.
 template <typename T, std::size_t... Is1, std::size_t... Is2>
-constexpr std::array<T, sizeof...(Is1) + sizeof...(Is2)>
-ConcatArrays(const std::array<T, sizeof...(Is1)> &A1,
-             const std::array<T, sizeof...(Is2)> &A2,
+constexpr detail::array<sizeof...(Is1) + sizeof...(Is2), T>
+ConcatArrays(const detail::array<sizeof...(Is1), T> &A1,
+             const detail::array<sizeof...(Is2), T> &A2,
              std::index_sequence<Is1...>, std::index_sequence<Is2...>) {
   return {A1[Is1]..., A2[Is2]...};
 }
 template <typename T, std::size_t N1, std::size_t N2>
-constexpr std::array<T, N1 + N2> ConcatArrays(const std::array<T, N1> &A1,
-                                              const std::array<T, N2> &A2) {
+constexpr detail::array<N1 + N2, T>
+ConcatArrays(const detail::array<N1, T> &A1, const detail::array<N2, T> &A2) {
   return ConcatArrays(A1, A2, std::make_index_sequence<N1>(),
                       std::make_index_sequence<N2>());
 }

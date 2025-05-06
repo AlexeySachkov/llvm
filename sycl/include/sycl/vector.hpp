@@ -195,7 +195,7 @@ protected:
   alignas(alignment) DataType m_Data;
 
   template <size_t... Is>
-  constexpr vec_base(const std::array<DataT, NumElements> &Arr,
+  constexpr vec_base(const detail::array<NumElements, DataT> &Arr,
                      std::index_sequence<Is...>)
       : m_Data{Arr[Is]...} {}
 
@@ -224,7 +224,7 @@ protected:
       return 1;
   }
 
-  // Utility trait for creating an std::array from an vector argument.
+  // Utility trait for creating a detail::array from an vector argument.
   template <typename DataT_, typename T> class FlattenVecArg {
     template <std::size_t... Is>
     static constexpr auto helper(const T &V, std::index_sequence<Is...>) {
@@ -234,10 +234,10 @@ protected:
       // the other hand, `getValue()` gives correct results. This can be changed
       // to using `operator[]` once the bug is fixed.
       if constexpr (is_swizzle_v<T>)
-        return std::array{static_cast<DataT_>(V.getValue(Is))...};
+        return detail::array{static_cast<DataT_>(V.getValue(Is))...};
       else
 #endif
-        return std::array{static_cast<DataT_>(V[Is])...};
+        return detail::array{static_cast<DataT_>(V[Is])...};
     }
 
   public:
@@ -245,7 +245,7 @@ protected:
       if constexpr (is_vec_or_swizzle_v<T>) {
         return helper(A, std::make_index_sequence<T ::size()>());
       } else {
-        return std::array{static_cast<DataT_>(A)};
+        return detail::array{static_cast<DataT_>(A)};
       }
     }
   };
@@ -944,13 +944,13 @@ public:
 #endif // __SYCL_DEVICE_ONLY__
 
   const DataT &operator[](int i) const {
-    std::array<int, size()> Idxs{Indexes...};
+    detail::array<size(), int> Idxs{Indexes...};
     return (*m_Vector)[Idxs[i]];
   }
 
   template <typename _T = VecT>
   std::enable_if_t<!std::is_const_v<_T>, DataT> &operator[](int i) {
-    std::array<int, size()> Idxs{Indexes...};
+    detail::array<size(), int> Idxs{Indexes...};
     return (*m_Vector)[Idxs[i]];
   }
 
@@ -1160,7 +1160,7 @@ public:
 
   template <int IdxNum = size(), typename = EnableIfMultipleIndexes<IdxNum>>
   SwizzleOp &operator=(const vec<DataT, IdxNum> &Rhs) {
-    std::array<int, IdxNum> Idxs{Indexes...};
+    detail::array<IdxNum, int> Idxs{Indexes...};
     for (size_t I = 0; I < Idxs.size(); ++I) {
       (*m_Vector)[Idxs[I]] = Rhs[I];
     }
@@ -1169,14 +1169,14 @@ public:
 
   template <int IdxNum = size(), typename = EnableIfOneIndex<IdxNum>>
   SwizzleOp &operator=(const DataT &Rhs) {
-    std::array<int, IdxNum> Idxs{Indexes...};
+    detail::array<IdxNum, int> Idxs{Indexes...};
     (*m_Vector)[Idxs[0]] = Rhs;
     return *this;
   }
 
   template <int IdxNum = size(), EnableIfMultipleIndexes<IdxNum, bool> = true>
   SwizzleOp &operator=(const DataT &Rhs) {
-    std::array<int, IdxNum> Idxs{Indexes...};
+    detail::array<IdxNum, int> Idxs{Indexes...};
     for (auto Idx : Idxs) {
       (*m_Vector)[Idx] = Rhs;
     }
@@ -1185,7 +1185,7 @@ public:
 
   template <int IdxNum = size(), typename = EnableIfOneIndex<IdxNum>>
   SwizzleOp &operator=(DataT &&Rhs) {
-    std::array<int, IdxNum> Idxs{Indexes...};
+    detail::array<IdxNum, int> Idxs{Indexes...};
     (*m_Vector)[Idxs[0]] = Rhs;
     return *this;
   }
@@ -1336,7 +1336,7 @@ public:
             int... T5,
             typename = typename std::enable_if_t<sizeof...(T5) == size()>>
   SwizzleOp &operator=(const SwizzleOp<T1, T2, T3, T4, T5...> &Rhs) {
-    std::array<int, size()> Idxs{Indexes...};
+    detail::array<size(), int> Idxs{Indexes...};
     for (size_t I = 0; I < Idxs.size(); ++I) {
       (*m_Vector)[Idxs[I]] = Rhs.getValue(I);
     }
@@ -1347,7 +1347,7 @@ public:
             int... T5,
             typename = typename std::enable_if_t<sizeof...(T5) == size()>>
   SwizzleOp &operator=(SwizzleOp<T1, T2, T3, T4, T5...> &&Rhs) {
-    std::array<int, size()> Idxs{Indexes...};
+    detail::array<size(), int> Idxs{Indexes...};
     for (size_t I = 0; I < Idxs.size(); ++I) {
       (*m_Vector)[Idxs[I]] = Rhs.getValue(I);
     }
@@ -1496,7 +1496,7 @@ public:
   vec<convertT, sizeof...(Indexes)> convert() const {
     // First materialize the swizzle to vec_t and then apply convert() to it.
     vec_t Tmp;
-    std::array<int, size()> Idxs{Indexes...};
+    detail::array<size(), int> Idxs{Indexes...};
     for (size_t I = 0; I < Idxs.size(); ++I) {
       Tmp[I] = (*m_Vector)[Idxs[I]];
     }
@@ -1538,7 +1538,7 @@ private:
   template <int IdxNum = size()>
   CommonDataT getValue(EnableIfOneIndex<IdxNum, size_t> Index) const {
     if (std::is_same_v<OperationCurrentT<DataT>, GetOp<DataT>>) {
-      std::array<int, size()> Idxs{Indexes...};
+      detail::array<size(), int> Idxs{Indexes...};
       return (*m_Vector)[Idxs[Index]];
     }
     auto Op = OperationCurrentT<CommonDataT>();
@@ -1549,7 +1549,7 @@ private:
   template <int IdxNum = size()>
   DataT getValue(EnableIfMultipleIndexes<IdxNum, size_t> Index) const {
     if (std::is_same_v<OperationCurrentT<DataT>, GetOp<DataT>>) {
-      std::array<int, size()> Idxs{Indexes...};
+      detail::array<size(), int> Idxs{Indexes...};
       return (*m_Vector)[Idxs[Index]];
     }
     auto Op = OperationCurrentT<DataT>();
@@ -1560,7 +1560,7 @@ private:
   template <template <typename> class Operation, typename RhsOperation>
   void operatorHelper(const RhsOperation &Rhs) const {
     Operation<DataT> Op;
-    std::array<int, size()> Idxs{Indexes...};
+    detail::array<size(), int> Idxs{Indexes...};
     for (size_t I = 0; I < Idxs.size(); ++I) {
       DataT Res = Op((*m_Vector)[Idxs[I]], Rhs.getValue(I));
       (*m_Vector)[Idxs[I]] = Res;

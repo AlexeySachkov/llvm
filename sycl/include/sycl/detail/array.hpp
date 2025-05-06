@@ -20,69 +20,71 @@ template <int dimensions> class id;
 template <int dimensions> class range;
 namespace detail {
 
-template <int dimensions = 1> class array {
+template <int dimensions = 1, typename T = size_t> class array {
   static_assert(dimensions >= 1, "Array cannot be 0-dimensional.");
 
 public:
+  T _Elements[dimensions];
+
   /* The following constructor is only available in the array struct
    * specialization where: dimensions==1 */
-  template <int N = dimensions>
-  array(typename std::enable_if_t<(N == 1), size_t> dim0 = 0)
-      : common_array{dim0} {}
+  //template <int N = dimensions>
+  //array(typename std::enable_if_t<(N == 1), size_t> dim0 = 0)
+  //    : _Elements{dim0} {}
 
   /* The following constructors are only available in the array struct
    * specialization where: dimensions==2 */
-  template <int N = dimensions>
-  array(typename std::enable_if_t<(N == 2), size_t> dim0, size_t dim1)
-      : common_array{dim0, dim1} {}
+  //template <int N = dimensions>
+  //array(typename std::enable_if_t<(N == 2), size_t> dim0, size_t dim1)
+  //    : _Elements{dim0, dim1} {}
 
-  template <int N = dimensions, std::enable_if_t<(N == 2), size_t> = 0>
-  array() : array(0, 0) {}
+  //template <int N = dimensions, std::enable_if_t<(N == 2), size_t> = 0>
+  //array() : array(0, 0) {}
 
   /* The following constructors are only available in the array struct
    * specialization where: dimensions==3 */
-  template <int N = dimensions>
-  array(typename std::enable_if_t<(N == 3), size_t> dim0, size_t dim1,
-        size_t dim2)
-      : common_array{dim0, dim1, dim2} {}
+  //template <int N = dimensions>
+  //array(typename std::enable_if_t<(N == 3), size_t> dim0, size_t dim1,
+  //      size_t dim2)
+  //    : _Elements{dim0, dim1, dim2} {}
 
-  template <int N = dimensions, std::enable_if_t<(N == 3), size_t> = 0>
-  array() : array(0, 0, 0) {}
+  //template <int N = dimensions, std::enable_if_t<(N == 3), size_t> = 0>
+  //array() : array(0, 0, 0) {}
+
+  array(const array<dimensions, T> &rhs) = default;
+  array(array<dimensions, T> &&rhs) = default;
+  array<dimensions, T> &operator=(const array<dimensions, T> &rhs) = default;
+  array<dimensions, T> &operator=(array<dimensions, T> &&rhs) = default;
 
   // Conversion operators to derived classes
   operator sycl::id<dimensions>() const {
     sycl::id<dimensions> result;
     for (int i = 0; i < dimensions; ++i) {
-      result[i] = common_array[i];
+      result[i] = _Elements[i];
     }
     return result;
   }
 
   size_t get(int dimension) const {
     check_dimension(dimension);
-    return common_array[dimension];
+    return _Elements[dimension];
   }
 
   size_t &operator[](int dimension) {
     check_dimension(dimension);
-    return common_array[dimension];
+    return _Elements[dimension];
   }
 
-  size_t operator[](int dimension) const {
-    check_dimension(dimension);
-    return common_array[dimension];
+  constexpr size_t operator[](int dimension) const {
+    return _Elements[dimension];
   }
 
-  array(const array<dimensions> &rhs) = default;
-  array(array<dimensions> &&rhs) = default;
-  array<dimensions> &operator=(const array<dimensions> &rhs) = default;
-  array<dimensions> &operator=(array<dimensions> &&rhs) = default;
 
   // Returns true iff all elements in 'this' are equal to
   // the corresponding elements in 'rhs'.
-  bool operator==(const array<dimensions> &rhs) const {
+  bool operator==(const array<dimensions, T> &rhs) const {
     for (int i = 0; i < dimensions; ++i) {
-      if (this->common_array[i] != rhs.common_array[i]) {
+      if (this->_Elements[i] != rhs._Elements[i]) {
         return false;
       }
     }
@@ -91,9 +93,9 @@ public:
 
   // Returns true iff there is at least one element in 'this'
   // which is not equal to the corresponding element in 'rhs'.
-  bool operator!=(const array<dimensions> &rhs) const {
+  bool operator!=(const array<dimensions, T> &rhs) const {
     for (int i = 0; i < dimensions; ++i) {
-      if (this->common_array[i] != rhs.common_array[i]) {
+      if (this->_Elements[i] != rhs._Elements[i]) {
         return true;
       }
     }
@@ -101,7 +103,6 @@ public:
   }
 
 protected:
-  size_t common_array[dimensions];
   __SYCL_ALWAYS_INLINE void check_dimension(int dimension) const {
 #ifndef __SYCL_DEVICE_ONLY__
     if (dimension >= dimensions || dimension < 0) {
@@ -112,6 +113,9 @@ protected:
     (void)dimension;
   }
 };
+
+template <class _First, class... _Rest>
+array(_First, _Rest...) -> array<1 + sizeof...(_Rest), _First>;
 
 } // namespace detail
 } // namespace _V1
