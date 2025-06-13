@@ -10,9 +10,11 @@
 #include <detail/event_impl.hpp>
 #include <detail/queue_impl.hpp>
 #include <sycl/detail/common.hpp>
+#include <sycl/detail/info_desc_helpers.hpp>
 #include <sycl/event.hpp>
 #include <sycl/exception_list.hpp>
 #include <sycl/handler.hpp>
+#include <sycl/info/device.hpp>
 #include <sycl/queue.hpp>
 
 #include <algorithm>
@@ -410,7 +412,7 @@ queue::get_backend_info() const {
   template __SYCL_EXPORT ReturnT                                               \
   queue::get_backend_info<info::DescType::Desc>() const;
 
-// #include <sycl/info/sycl_backend_traits.def>
+#include <sycl/info/sycl_backend_traits.def>
 
 #undef __SYCL_PARAM_TRAITS_SPEC
 

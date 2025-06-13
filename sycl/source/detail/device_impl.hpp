@@ -12,10 +12,10 @@
 #include <detail/program_manager/program_manager.hpp>
 #include <sycl/aspects.hpp>
 #include <sycl/detail/cl.h>
-#include <sycl/detail/device_info_desc_helpers.hpp>
 #include <sycl/detail/ur.hpp>
 #include <sycl/ext/oneapi/experimental/device_architecture.hpp>
 #include <sycl/ext/oneapi/experimental/forward_progress.hpp>
+#include <sycl/info/device.hpp>
 #include <sycl/kernel_bundle.hpp>
 #include <sycl/platform.hpp>
 

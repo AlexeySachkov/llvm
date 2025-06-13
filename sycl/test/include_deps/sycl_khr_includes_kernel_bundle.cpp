@@ -29,8 +29,8 @@
 // CHECK-NEXT: aspects.hpp
 // CHECK-NEXT: info/aspects.def
 // CHECK-NEXT: info/aspects_deprecated.def
-// CHECK-NEXT: ext/oneapi/experimental/forward_progress.hpp
 // CHECK-NEXT: info/device.hpp
+// CHECK-NEXT: ext/oneapi/experimental/forward_progress.hpp
 // CHECK-NEXT: info/device_traits_2020_deprecated.def
 // CHECK-NEXT: info/device_traits_deprecated.def
 // CHECK-NEXT: info/device_traits.def
@@ -68,6 +68,7 @@
 // CHECK-NEXT: info/event_profiling_traits.def
 // CHECK-NEXT: info/ext_intel_kernel_info_traits.def
 // CHECK-NEXT: info/ext_oneapi_kernel_queue_specific_traits.def
+// CHECK-NEXT: info/sycl_backend_traits.def
 // CHECK-NEXT: detail/util.hpp
 // CHECK-NEXT: device_selector.hpp
 // CHECK-NEXT: kernel_bundle_enums.hpp

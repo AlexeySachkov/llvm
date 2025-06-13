@@ -16,6 +16,9 @@
 #include <sycl/aspects.hpp>
 #include <sycl/id.hpp>
 #include <sycl/info/info_desc.hpp>
+// FIXME: we only include this because of some backend traits which are already
+// deprecated and will be removed in the next ABI-breaking release
+#include <sycl/info/device.hpp>
 
 namespace sycl {
 inline namespace _V1 {
@@ -122,7 +125,7 @@ struct IsKernelInfo<info::kernel_device_specific::ext_codeplay_num_regs>
   struct is_backend_info_desc<info::DescType::Desc> : std::true_type {         \
     using return_type = info::DescType::Desc::return_type;                     \
   };
-// #include <sycl/info/sycl_backend_traits.def>
+#include <sycl/info/sycl_backend_traits.def>
 #undef __SYCL_PARAM_TRAITS_SPEC
 
 #ifndef __INTEL_PREVIEW_BREAKING_CHANGES

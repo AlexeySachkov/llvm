@@ -12,9 +12,11 @@
 #include <detail/platform_impl.hpp>
 #include <detail/ur.hpp>
 #include <sycl/context.hpp>
+#include <sycl/detail/info_desc_helpers.hpp>
 #include <sycl/device.hpp>
 #include <sycl/device_selector.hpp>
 #include <sycl/image.hpp>
+#include <sycl/info/device.hpp>
 #include <sycl/info/info_desc.hpp>
 #include <sycl/platform.hpp>
 
@@ -84,7 +86,7 @@ platform::get_backend_info() const {
   template __SYCL_EXPORT ReturnT                                               \
   platform::get_backend_info<info::DescType::Desc>() const;
 
-// #include <sycl/info/sycl_backend_traits.def>
+#include <sycl/info/sycl_backend_traits.def>
 
 #undef __SYCL_PARAM_TRAITS_SPEC
 

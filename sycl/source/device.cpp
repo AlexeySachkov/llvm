@@ -13,8 +13,10 @@
 #include <detail/ur.hpp>
 #include <sycl/detail/device_filter.hpp>
 #include <sycl/detail/export.hpp>
+#include <sycl/detail/info_desc_helpers.hpp>
 #include <sycl/device.hpp>
 #include <sycl/device_selector.hpp>
+#include <sycl/info/device.hpp>
 #include <sycl/info/info_desc.hpp>
 
 namespace sycl {
@@ -205,7 +207,7 @@ device::get_backend_info() const {
   template __SYCL_EXPORT ReturnT                                               \
   device::get_backend_info<info::DescType::Desc>() const;
 
-// #include <sycl/info/sycl_backend_traits.def>
+#include <sycl/info/sycl_backend_traits.def>
 
 #undef __SYCL_PARAM_TRAITS_SPEC
 

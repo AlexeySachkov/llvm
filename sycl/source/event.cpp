@@ -12,8 +12,10 @@
 #include <detail/scheduler/scheduler.hpp>
 #include <sycl/context.hpp>
 #include <sycl/detail/common.hpp>
+#include <sycl/detail/info_desc_helpers.hpp>
 #include <sycl/detail/ur.hpp>
 #include <sycl/event.hpp>
+#include <sycl/info/device.hpp>
 #include <sycl/info/info_desc.hpp>
 
 #include <memory>
@@ -103,7 +105,7 @@ event::get_profiling_info() const {
   template __SYCL_EXPORT ReturnT                                               \
   event::get_backend_info<info::DescType::Desc>() const;
 
-// #include <sycl/info/sycl_backend_traits.def>
+#include <sycl/info/sycl_backend_traits.def>
 
 #undef __SYCL_PARAM_TRAITS_SPEC
 

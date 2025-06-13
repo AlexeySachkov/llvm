@@ -11,11 +11,13 @@
 #include <detail/ur.hpp>
 #include <sycl/context.hpp>
 #include <sycl/detail/common.hpp>
+#include <sycl/detail/info_desc_helpers.hpp>
 #include <sycl/device.hpp>
 #include <sycl/device_selector.hpp>
 #include <sycl/exception.hpp>
 #include <sycl/exception_list.hpp>
 #include <sycl/ext/oneapi/experimental/async_alloc/memory_pool.hpp>
+#include <sycl/info/device.hpp>
 #include <sycl/info/info_desc.hpp>
 #include <sycl/platform.hpp>
 #include <sycl/properties/all_properties.hpp>
@@ -109,7 +111,7 @@ context::get_backend_info() const {
   template __SYCL_EXPORT ReturnT                                               \
   context::get_backend_info<info::DescType::Desc>() const;
 
-// #include <sycl/info/sycl_backend_traits.def>
+#include <sycl/info/sycl_backend_traits.def>
 
 #undef __SYCL_PARAM_TRAITS_SPEC
 

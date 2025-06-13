@@ -10,7 +10,6 @@
 
 #include <sycl/aspects.hpp>
 #include <sycl/detail/defines_elementary.hpp>
-#include <sycl/ext/oneapi/experimental/forward_progress.hpp>
 #include <sycl/info/device.hpp>
 #include <ur_api.h>
 
@@ -20,37 +19,6 @@
 
 namespace sycl {
 inline namespace _V1 {
-
-#define __SYCL_PARAM_TRAITS_SPEC(Namespace, DescType, Desc, ReturnT, UrCode)   \
-  namespace Namespace {                                                        \
-  namespace info {                                                             \
-  namespace DescType {                                                         \
-  struct Desc {                                                                \
-    using return_type = ReturnT;                                               \
-  };                                                                           \
-  } /*DescType*/                                                               \
-  } /*info*/                                                                   \
-  } /*Namespace*/
-
-#define __SYCL_PARAM_TRAITS_TEMPLATE_SPEC(Namespace, DescType, Desc, ReturnT,  \
-                                          UrCode)                              \
-  namespace Namespace {                                                        \
-  namespace info {                                                             \
-  namespace DescType {                                                         \
-  template <> struct Desc {                                                    \
-    using return_type = ReturnT;                                               \
-  };                                                                           \
-  } /*namespace DescType */                                                    \
-  } /*namespace info */                                                        \
-  } /*namespace Namespace */
-
-#include <sycl/info/ext_codeplay_device_traits.def>
-#include <sycl/info/ext_intel_device_traits.def>
-#include <sycl/info/ext_oneapi_device_traits.def>
-
-#undef __SYCL_PARAM_TRAITS_SPEC
-#undef __SYCL_PARAM_TRAITS_TEMPLATE_SPEC
-
 namespace detail {
 
 template <typename T> struct is_device_info_desc : std::false_type {};
