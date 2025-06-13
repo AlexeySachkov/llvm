@@ -14,9 +14,9 @@
 #include <sycl/detail/export.hpp>             // for __SYCL_EXPORT
 #include <sycl/detail/info_desc_helpers.hpp>  // for is_context_info_desc
 #include <sycl/detail/owner_less_base.hpp>    // for OwnerLessBase
-#include <sycl/property_list.hpp>             // for property_list
-#include <sycl/usm/usm_enums.hpp>             // for usm::alloc
-#include <ur_api.h>                           // for ur_native_handle_t
+#include <sycl/property_list.hpp> // for property_list
+#include <sycl/usm/usm_enums.hpp> // for usm::alloc
+#include <ur_api.h>               // for ur_native_handle_t
 
 #ifdef __SYCL_INTERNAL_API
 #include <sycl/detail/cl.h>
@@ -35,6 +35,7 @@ inline namespace _V1 {
 // Forward declarations
 class device;
 class platform;
+class context;
 
 namespace ext::oneapi::experimental {
 class memory_pool;
@@ -45,6 +46,28 @@ class context_impl;
 }
 template <backend Backend, class SyclT>
 auto get_native(const SyclT &Obj) -> backend_return_t<Backend, SyclT>;
+
+// Informational descriptors
+namespace info::context {
+#define __SYCL_PARAM_TRAITS_SPEC(DescType, Desc, ReturnT, UrCode)              \
+  struct Desc {                                                                \
+    using return_type = ReturnT;                                               \
+  };
+
+#include <sycl/info/context_traits.def>
+#undef __SYCL_PARAM_TRAITS_SPEC
+} // namespace info::context
+
+namespace detail {
+template <typename T> struct is_context_info_desc : std::false_type {};
+#define __SYCL_PARAM_TRAITS_SPEC(DescType, Desc, ReturnT, UrCode)              \
+  template <>                                                                  \
+  struct is_##DescType##_info_desc<info::DescType::Desc> : std::true_type {    \
+    using return_type = info::DescType::Desc::return_type;                     \
+  };
+#include <sycl/info/context_traits.def>
+#undef __SYCL_PARAM_TRAITS_SPEC
+} // namespace detail
 
 /// The context class represents a SYCL context on which kernel functions may
 /// be executed.

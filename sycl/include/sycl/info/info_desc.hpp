@@ -49,10 +49,6 @@ struct __SYCL2020_DEPRECATED("deprecated in SYCL 2020, use device::get_info() "
                              "with info::device::aspects instead") extensions;
 #include <sycl/info/platform_traits.def>
 } // namespace platform
-// A.2 Context information desctiptors
-namespace context {
-#include <sycl/info/context_traits.def>
-} // namespace context
 
 // A.4 Queue information descriptors
 namespace queue {

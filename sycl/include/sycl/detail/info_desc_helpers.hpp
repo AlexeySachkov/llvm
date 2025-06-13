@@ -24,7 +24,6 @@ namespace sycl {
 inline namespace _V1 {
 namespace detail {
 template <typename T> struct is_platform_info_desc : std::false_type {};
-template <typename T> struct is_context_info_desc : std::false_type {};
 template <typename T> struct is_queue_info_desc : std::false_type {};
 template <typename T> struct is_kernel_info_desc : std::false_type {};
 template <typename T>
@@ -49,7 +48,6 @@ template <typename T> struct is_backend_info_desc : std::false_type {};
   struct is_##DescType##_info_desc<info::DescType::Desc> : std::true_type {    \
     using return_type = info::DescType::Desc::return_type;                     \
   };
-#include <sycl/info/context_traits.def>
 #include <sycl/info/event_traits.def>
 #include <sycl/info/kernel_traits.def>
 #include <sycl/info/platform_traits.def>

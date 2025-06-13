@@ -52,7 +52,7 @@
 // CHECK-NEXT: device.hpp
 // CHECK-NEXT: backend_types.hpp
 // CHECK-NEXT: detail/device_info_desc_helpers.hpp
-// CHECK-NEXT: info/device.hpp
+// CHECK-NEXT: info/device_desc.hpp
 // CHECK-NEXT: ext/oneapi/experimental/forward_progress.hpp
 // CHECK-NEXT: ur_api.h
 // CHECK-NEXT: info/device_traits_2020_deprecated.def
@@ -71,7 +71,6 @@
 // CHECK-NEXT: ext/oneapi/matrix/query-types.hpp
 // CHECK-NEXT: ext/oneapi/matrix/matrix-unified-utils.hpp
 // CHECK-NEXT: info/platform_traits.def
-// CHECK-NEXT: info/context_traits.def
 // CHECK-NEXT: info/queue_traits.def
 // CHECK-NEXT: info/kernel_traits.def
 // CHECK-NEXT: info/kernel_device_specific_traits.def
@@ -109,6 +108,7 @@
 // CHECK-NEXT: context.hpp
 // CHECK-NEXT: async_handler.hpp
 // CHECK-NEXT: usm/usm_enums.hpp
+// CHECK-NEXT: info/context_traits.def
 // CHECK-NEXT: properties/buffer_properties.def
 // CHECK-NEXT: detail/assert_happened.hpp
 // CHECK-NEXT: detail/cg_types.hpp

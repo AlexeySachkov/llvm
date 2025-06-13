@@ -29,7 +29,7 @@
 // CHECK-NEXT: aspects.hpp
 // CHECK-NEXT: info/aspects.def
 // CHECK-NEXT: info/aspects_deprecated.def
-// CHECK-NEXT: info/device.hpp
+// CHECK-NEXT: info/device_desc.hpp
 // CHECK-NEXT: ext/oneapi/experimental/forward_progress.hpp
 // CHECK-NEXT: info/device_traits_2020_deprecated.def
 // CHECK-NEXT: info/device_traits_deprecated.def
@@ -60,7 +60,6 @@
 // CHECK-NEXT: detail/iostream_proxy.hpp
 // CHECK-NEXT: ext/oneapi/matrix/matrix-unified-utils.hpp
 // CHECK-NEXT: info/platform_traits.def
-// CHECK-NEXT: info/context_traits.def
 // CHECK-NEXT: info/queue_traits.def
 // CHECK-NEXT: info/kernel_traits.def
 // CHECK-NEXT: info/kernel_device_specific_traits.def
@@ -96,6 +95,7 @@
 // CHECK-NEXT: context.hpp
 // CHECK-NEXT: async_handler.hpp
 // CHECK-NEXT: usm/usm_enums.hpp
+// CHECK-NEXT: info/context_traits.def
 // CHECK-NEXT: properties/buffer_properties.def
 // CHECK-NEXT: detail/cg_types.hpp
 // CHECK-NEXT: detail/host_profiling_info.hpp

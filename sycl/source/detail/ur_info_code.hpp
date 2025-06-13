@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <sycl/context.hpp>
 #include <sycl/detail/info_desc_helpers.hpp>
 #include <sycl/info/device_desc.hpp>
 
