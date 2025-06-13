@@ -15,7 +15,7 @@
 #include <sycl/detail/info_desc_helpers.hpp>
 #include <sycl/detail/ur.hpp>
 #include <sycl/event.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <sycl/info/info_desc.hpp>
 
 #include <memory>

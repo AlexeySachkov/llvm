@@ -15,7 +15,7 @@
 #include <sycl/detail/ur.hpp>
 #include <sycl/ext/oneapi/experimental/device_architecture.hpp>
 #include <sycl/ext/oneapi/experimental/forward_progress.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <sycl/kernel_bundle.hpp>
 #include <sycl/platform.hpp>
 

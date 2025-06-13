@@ -17,7 +17,7 @@
 #include <sycl/detail/string_view.hpp>
 #include <sycl/detail/util.hpp>
 #include <sycl/device_selector.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <sycl/info/info_desc.hpp>
 #include <ur_api.h>
 

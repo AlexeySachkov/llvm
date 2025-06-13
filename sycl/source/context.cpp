@@ -17,7 +17,7 @@
 #include <sycl/exception.hpp>
 #include <sycl/exception_list.hpp>
 #include <sycl/ext/oneapi/experimental/async_alloc/memory_pool.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <sycl/info/info_desc.hpp>
 #include <sycl/platform.hpp>
 #include <sycl/properties/all_properties.hpp>

@@ -12,7 +12,7 @@
 #include <detail/ur.hpp>
 #include <sycl/detail/export.hpp>
 #include <sycl/detail/info_desc_helpers.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <sycl/kernel.hpp>
 
 namespace sycl {

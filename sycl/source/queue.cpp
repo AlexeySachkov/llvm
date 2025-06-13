@@ -14,7 +14,7 @@
 #include <sycl/event.hpp>
 #include <sycl/exception_list.hpp>
 #include <sycl/handler.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <sycl/queue.hpp>
 
 #include <algorithm>

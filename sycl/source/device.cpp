@@ -16,7 +16,7 @@
 #include <sycl/detail/info_desc_helpers.hpp>
 #include <sycl/device.hpp>
 #include <sycl/device_selector.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <sycl/info/info_desc.hpp>
 
 namespace sycl {

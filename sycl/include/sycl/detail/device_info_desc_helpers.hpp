@@ -10,7 +10,7 @@
 
 #include <sycl/aspects.hpp>
 #include <sycl/detail/defines_elementary.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <ur_api.h>
 
 #include <cstdint>

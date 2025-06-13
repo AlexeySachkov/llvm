@@ -16,7 +16,7 @@
 #include <sycl/device.hpp>
 #include <sycl/device_selector.hpp>
 #include <sycl/image.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <sycl/info/info_desc.hpp>
 #include <sycl/platform.hpp>
 

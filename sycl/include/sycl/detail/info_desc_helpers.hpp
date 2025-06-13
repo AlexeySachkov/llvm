@@ -18,7 +18,7 @@
 #include <sycl/info/info_desc.hpp>
 // FIXME: we only include this because of some backend traits which are already
 // deprecated and will be removed in the next ABI-breaking release
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 
 namespace sycl {
 inline namespace _V1 {

@@ -13,7 +13,7 @@
 #include <sycl/detail/device_filter.hpp>
 #include <sycl/detail/ur.hpp>
 #include <sycl/exception.hpp>
-#include <sycl/info/device.hpp>
+#include <sycl/info/device_desc.hpp>
 #include <sycl/info/info_desc.hpp>
 
 #include <algorithm>
