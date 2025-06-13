@@ -10,6 +10,10 @@
 
 #include <ur_api.h>
 
+#include <cstdint>
+#include <string>
+#include <vector>
+
 namespace sycl {
 inline namespace _V1 {
 

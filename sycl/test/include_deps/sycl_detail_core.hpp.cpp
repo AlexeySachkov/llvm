@@ -94,6 +94,7 @@
 // CHECK-NEXT: detail/optional.hpp
 // CHECK-NEXT: device.hpp
 // CHECK-NEXT: detail/device_info_desc_helpers.hpp
+// CHECK-NEXT: info/device.hpp
 // CHECK-NEXT: info/device_traits_2020_deprecated.def
 // CHECK-NEXT: info/device_traits_deprecated.def
 // CHECK-NEXT: info/device_traits.def

@@ -30,6 +30,7 @@
 // CHECK-NEXT: info/aspects.def
 // CHECK-NEXT: info/aspects_deprecated.def
 // CHECK-NEXT: ext/oneapi/experimental/forward_progress.hpp
+// CHECK-NEXT: info/device.hpp
 // CHECK-NEXT: info/device_traits_2020_deprecated.def
 // CHECK-NEXT: info/device_traits_deprecated.def
 // CHECK-NEXT: info/device_traits.def

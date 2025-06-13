@@ -57,4 +57,8 @@
 // CHECK-NEXT: detail/string_view.hpp
 // CHECK-NEXT: detail/util.hpp
 // CHECK-NEXT: device_selector.hpp
+// CHECK-NEXT: info/device.hpp
+// CHECK-NEXT: info/device_traits_2020_deprecated.def
+// CHECK-NEXT: info/device_traits_deprecated.def
+// CHECK-NEXT: info/device_traits.def
 // CHECK-EMPTY:

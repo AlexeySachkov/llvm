@@ -53,6 +53,7 @@
 // CHECK-NEXT: backend_types.hpp
 // CHECK-NEXT: detail/device_info_desc_helpers.hpp
 // CHECK-NEXT: ext/oneapi/experimental/forward_progress.hpp
+// CHECK-NEXT: info/device.hpp
 // CHECK-NEXT: ur_api.h
 // CHECK-NEXT: info/device_traits_2020_deprecated.def
 // CHECK-NEXT: info/device_traits_deprecated.def
