@@ -9,6 +9,7 @@
 #pragma once
 
 #include <sycl/detail/defines.hpp>
+#include <sycl/detail/device_info_desc_helpers.hpp>
 #include <sycl/info/info_desc.hpp>
 
 #include <optional>

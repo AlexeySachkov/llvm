@@ -10,6 +10,7 @@
 
 #include <sycl/backend_types.hpp>
 #include <sycl/detail/defines_elementary.hpp>
+#include <sycl/detail/device_info_desc_helpers.hpp>
 #include <sycl/detail/export.hpp>
 #include <sycl/detail/info_desc_helpers.hpp>
 #include <sycl/detail/owner_less_base.hpp>

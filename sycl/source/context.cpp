@@ -109,7 +109,7 @@ context::get_backend_info() const {
   template __SYCL_EXPORT ReturnT                                               \
   context::get_backend_info<info::DescType::Desc>() const;
 
-#include <sycl/info/sycl_backend_traits.def>
+// #include <sycl/info/sycl_backend_traits.def>
 
 #undef __SYCL_PARAM_TRAITS_SPEC
 
