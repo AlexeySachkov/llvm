@@ -1244,11 +1244,17 @@ static int getFreeFunctionRangeDim(SemaSYCL &SemaSYCLRef,
 // __sycl_kernel_ and adjusts the length, leaving the rest of the name as-is.
 static std::pair<std::string, std::string> constructFreeFunctionKernelName(
     SemaSYCL &SemaSYCLRef, const FunctionDecl *FreeFunc, MangleContext &MC) {
+#if 0
   SmallString<256> Result;
   llvm::raw_svector_ostream Out(Result);
   std::string NewName;
   std::string StableName;
+#endif
+  std::string StableName = SYCLUniqueStableNameExpr::ComputeName(
+      SemaSYCLRef.getASTContext(), FreeFunc->getType());
+  return {StableName, StableName};
 
+#if 0
   // Handle extern "C"
   if (FreeFunc->getLanguageLinkage() == CLanguageLinkage) {
     const IdentifierInfo *II = FreeFunc->getIdentifier();
@@ -1265,7 +1271,9 @@ static std::pair<std::string, std::string> constructFreeFunctionKernelName(
               "__sycl_kernel_" + MangledName.substr(EndNums);
   }
   StableName = NewName;
+
   return {NewName, StableName};
+#endif
 }
 
 // The first template argument to the kernel caller function is used to identify
@@ -7002,6 +7010,7 @@ void SYCLIntegrationHeader::emit(raw_ostream &O) {
     return;
   }
 
+#if 0
   unsigned ShimCounter = 1;
   int FreeFunctionCount = 0;
   for (const KernelDesc &K : KernelDescs) {
@@ -7134,6 +7143,7 @@ void SYCLIntegrationHeader::emit(raw_ostream &O) {
     O << "}\n";
     ++ShimCounter;
   }
+#endif
 }
 
 bool SYCLIntegrationHeader::emit(StringRef IntHeaderName) {

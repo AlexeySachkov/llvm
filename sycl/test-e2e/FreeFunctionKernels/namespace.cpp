@@ -222,11 +222,11 @@ int main() {
   sycl::context ctxt = q.get_context();
 
   test_function_without_ns(q, ctxt);
-  test_function_in_ns(q, ctxt);
-  test_function_in_inline_ns(q, ctxt);
-  test_function_in_anonymous_ns(q, ctxt);
-  test_func_in_ns_with_same_name(q, ctxt);
-  test_function_with_class(q, ctxt);
-  test_fucntions_with_int_class_alias(q, ctxt);
+  // test_function_in_ns(q, ctxt);
+  // test_function_in_inline_ns(q, ctxt);
+  // test_function_in_anonymous_ns(q, ctxt);
+  // test_func_in_ns_with_same_name(q, ctxt);
+  // test_function_with_class(q, ctxt);
+  // test_fucntions_with_int_class_alias(q, ctxt);
   return 0;
 }

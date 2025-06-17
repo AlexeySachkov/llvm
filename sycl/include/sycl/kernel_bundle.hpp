@@ -627,6 +627,19 @@ template <typename KernelName> kernel_id get_kernel_id() {
 /// \returns a vector with all kernel_id's defined in the application
 __SYCL_EXPORT std::vector<kernel_id> get_kernel_ids();
 
+namespace ext::oneapi::experimental {
+template <auto *Func>
+std::enable_if_t<is_kernel_v<Func>, kernel_id> get_kernel_id() {
+#if __has_builtin(__builtin_sycl_unique_stable_name)
+  return detail::get_kernel_id_impl(
+      detail::string_view{__builtin_sycl_unique_stable_name(decltype(Func))});
+#else
+  return detail::get_kernel_id_impl(detail::string_view{""});
+#endif
+}
+} // namespace ext::oneapi::experimental
+
+
 /////////////////////////
 // get_kernel_bundle API
 /////////////////////////

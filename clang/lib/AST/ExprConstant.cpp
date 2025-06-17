@@ -12975,6 +12975,12 @@ static bool isSYCLFreeFunctionKernel(IntExprEvaluator &IEV,
   const Expr *ArgExpr = E->getArg(0)->IgnoreParenImpCasts();
   while (isa<CastExpr>(ArgExpr))
     ArgExpr = cast<CastExpr>(ArgExpr)->getSubExpr();
+
+  // Implicit address-of operator when argument is a non-type template parameter
+  if (auto *UOp = dyn_cast<UnaryOperator>(ArgExpr); UOp)
+    if (UO_AddrOf == UOp->getOpcode())
+      ArgExpr = UOp->getSubExpr();
+
   auto *DRE = dyn_cast<DeclRefExpr>(ArgExpr);
   if (DRE) {
     const FunctionDecl *FD = dyn_cast<FunctionDecl>(DRE->getDecl());
