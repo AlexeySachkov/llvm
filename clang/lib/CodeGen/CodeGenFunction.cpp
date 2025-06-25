@@ -666,6 +666,15 @@ void CodeGenFunction::EmitKernelMetadata(const FunctionDecl *FD,
 
   llvm::LLVMContext &Context = getLLVMContext();
 
+  if (const auto *A = FD->getAttr<SYCLKernelAttributesDescAttr>()) {
+    llvm::SmallVector<llvm::Metadata *, 32> MDArgs;
+    for (unsigned Arg : A->allArgs()) {
+      MDArgs.push_back(llvm::ConstantAsMetadata::get(Builder.getInt32(Arg)));
+    }
+    Fn->setMetadata("sycl_kernel_arguments_desc",
+                    llvm::MDNode::get(Context, MDArgs));
+  }
+
   if (getLangOpts().SYCLIsDevice)
     if (FD->hasAttr<SYCLRegisteredKernelNameAttr>())
       CGM.SYCLAddRegKernelNamePairs(

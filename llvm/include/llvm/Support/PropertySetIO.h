@@ -226,6 +226,7 @@ public:
   static constexpr char SYCL_VIRTUAL_FUNCTIONS[] = "SYCL/virtual functions";
   static constexpr char SYCL_IMPLICIT_LOCAL_ARG[] = "SYCL/implicit local arg";
   static constexpr char SYCL_REGISTERED_KERNELS[] = "SYCL/registered kernels";
+  static constexpr char SYCL_KERNEL_ARGS_INFO[] = "SYCL/kernel args info";
 
   static constexpr char PROPERTY_REQD_WORK_GROUP_SIZE[] =
       "reqd_work_group_size_uint64_t";

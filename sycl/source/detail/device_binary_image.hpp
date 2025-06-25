@@ -240,6 +240,7 @@ public:
     return RegisteredKernels;
   }
   const PropertyRange &getMiscProperties() const { return Misc; }
+  const PropertyRange &getKernelArgsProperties() const { return KernelArgsInfo; }
 
   std::uintptr_t getImageID() const {
     assert(Bin && "Image ID is not available without a binary image.");
@@ -270,6 +271,7 @@ protected:
   RTDeviceBinaryImage::PropertyRange ImplicitLocalArg;
   RTDeviceBinaryImage::PropertyRange RegisteredKernels;
   RTDeviceBinaryImage::PropertyRange Misc;
+  RTDeviceBinaryImage::PropertyRange KernelArgsInfo;
 
   std::vector<ur_program_metadata_t> ProgramMetadataUR;
 

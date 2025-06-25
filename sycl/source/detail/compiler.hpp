@@ -74,6 +74,8 @@
 /// PropertySetRegistry::SYCL_REGISTERED_KERNELS defined in PropertySetIO.h
 #define __SYCL_PROPERTY_SET_SYCL_REGISTERED_KERNELS "SYCL/registered kernels"
 
+#define __SYCL_PROPERTY_SET_SYCL_KERNEL_ARGS_INFO "SYCL/kernel args info"
+
 /// Program metadata tags recognized by the PI backends. For kernels the tag
 /// must appear after the kernel name.
 #define __SYCL_PROGRAM_METADATA_TAG_REQD_WORK_GROUP_SIZE "@reqd_work_group_size"

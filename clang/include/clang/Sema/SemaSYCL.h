@@ -80,7 +80,7 @@ public:
 
   ///  Signals that subsequent parameter descriptor additions will go to
   ///  the kernel with given name. Starts new kernel invocation descriptor.
-  void startKernel(const FunctionDecl *SyclKernel, QualType KernelNameType,
+  void startKernel(FunctionDecl *SyclKernel, QualType KernelNameType,
                    SourceLocation Loc, bool IsESIMD, bool IsUnnamedKernel,
                    int64_t ObjSize);
 
@@ -118,6 +118,8 @@ public:
   /// integration header is required.
   void addHostPipeRegistration() { NeedToEmitHostPipeRegistration = true; }
 
+  void generateAttributes(FunctionDecl *FD) const;
+
 private:
   // Kernel actual parameter descriptor.
   struct KernelParamDesc {
@@ -138,7 +140,7 @@ private:
   // Kernel invocation descriptor
   struct KernelDesc {
     /// sycl_kernel function associated with this kernel.
-    const FunctionDecl *SyclKernel;
+    FunctionDecl *SyclKernel = nullptr;
 
     /// Kernel name.
     std::string Name;
@@ -152,19 +154,21 @@ private:
     SourceLocation KernelLocation;
 
     /// Whether this kernel is an ESIMD one.
-    bool IsESIMDKernel;
+    bool IsESIMDKernel = false;
 
     /// Descriptor of kernel actual parameters.
     SmallVector<KernelParamDesc, 8> Params;
 
     // If we are in unnamed kernel/lambda mode AND this is one that the user
     // hasn't provided an explicit name for.
-    bool IsUnnamedKernel;
+    bool IsUnnamedKernel = false;
 
     /// Size of the kernel object.
     int64_t ObjSize = 0;
 
-    KernelDesc(const FunctionDecl *SyclKernel, QualType NameType,
+    KernelDesc() = default;
+
+    KernelDesc(FunctionDecl *SyclKernel, QualType NameType,
                SourceLocation KernelLoc, bool IsESIMD, bool IsUnnamedKernel,
                int64_t ObjSize)
         : SyclKernel(SyclKernel), NameType(NameType), KernelLocation(KernelLoc),

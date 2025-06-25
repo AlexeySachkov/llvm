@@ -280,6 +280,24 @@ PropSetRegTy computeModuleProperties(const Module &M,
     }
   }
 
+  {
+    for (const auto *F : EntryPoints) {
+      if (F->getCallingConv() != CallingConv::SPIR_KERNEL)
+        continue;
+      if (!F->hasMetadata("sycl_kernel_arguments_desc"))
+        continue;
+
+      MDNode *MD = F->getMetadata("sycl_kernel_arguments_desc");
+      llvm::SmallVector<uint32_t, 16> Args;
+      for (size_t I = 0; I < MD->getNumOperands(); ++I) {
+        Args.push_back(
+            mdconst::extract<ConstantInt>(MD->getOperand(I))->getZExtValue());
+      }
+      PropSet.add(PropSetRegTy::SYCL_KERNEL_ARGS_INFO, F->getName(),
+                  /*PropVal=*/Args);
+    }
+  }
+
   if (GlobProps.EmitImportedSymbols) {
     // record imported functions in the property set
     for (const auto &F : M) {

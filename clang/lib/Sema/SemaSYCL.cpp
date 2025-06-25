@@ -4764,6 +4764,7 @@ class SyclKernelIntHeaderCreator : public SyclKernelFieldHandler {
   llvm::SmallVector<size_t, 16> ArrayBaseOffsets;
   int StructDepth = 0;
 
+
   // A series of functions to calculate the change in offset based on the type.
   int64_t offsetOf(const FieldDecl *FD, QualType ArgTy) const {
     return isArrayElement(FD, ArgTy)
@@ -4806,6 +4807,10 @@ class SyclKernelIntHeaderCreator : public SyclKernelFieldHandler {
   }
 
 public:
+  void generateAttributes(FunctionDecl *FD) const {
+    Header.generateAttributes(FD);
+  }
+
   static constexpr const bool VisitInsideSimpleContainers = false;
   SyclKernelIntHeaderCreator(bool IsESIMD, SemaSYCL &S,
                              SYCLIntegrationHeader &H,
@@ -5493,6 +5498,9 @@ void SemaSYCL::ConstructOpenCLKernel(FunctionDecl *KernelCallerFunc,
                               esimdKernel, kernel_decl, kernel_body, int_header,
                               int_footer);
   }
+
+  FunctionDecl *KD = kernel_decl.getKernelDecl();
+  int_header.generateAttributes(KD);
 
   if (ParmVarDecl *KernelHandlerArg =
           getSyclKernelHandlerArg(KernelCallerFunc)) {
@@ -6756,6 +6764,22 @@ private:
   }
 };
 
+void SYCLIntegrationHeader::generateAttributes(FunctionDecl *Kernel) const {
+  for (const KernelDesc &K : KernelDescs) {
+    llvm::outs() << "Kernel: " << K.Name << "\n";
+    llvm::outs() << "Num args: " << K.Params.size() << "\n";
+
+    llvm::SmallVector<unsigned, 32> Args;
+    for (size_t I = 0, E = K.Params.size(); I != E; ++I) {
+      Args.push_back(static_cast<unsigned>(K.Params[I].Kind));
+      Args.push_back(static_cast<unsigned>(K.Params[I].Info));
+      Args.push_back(static_cast<unsigned>(K.Params[I].Offset));
+    }
+    Kernel->addAttr(SYCLKernelAttributesDescAttr::CreateImplicit(
+        S.getASTContext(), Args.data(), Args.size()));
+  }
+}
+
 void SYCLIntegrationHeader::emit(raw_ostream &O) {
   O << "// This is auto-generated SYCL integration header.\n";
   O << "\n";
@@ -7181,7 +7205,7 @@ bool SYCLIntegrationHeader::emit(StringRef IntHeaderName) {
   return true;
 }
 
-void SYCLIntegrationHeader::startKernel(const FunctionDecl *SyclKernel,
+void SYCLIntegrationHeader::startKernel(FunctionDecl *SyclKernel,
                                         QualType KernelNameType,
                                         SourceLocation KernelLocation,
                                         bool IsESIMDKernel,

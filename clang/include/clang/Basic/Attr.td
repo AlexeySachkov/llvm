@@ -1600,6 +1600,14 @@ def GlobalStorageNonLocalVar : SubsetSubject<Var,
                                                !S->isLocalVarDeclOrParm()}],
                                              "global variables">;
 
+def SYCLKernelAttributesDesc : InheritableAttr {
+  let Spellings = [Clang<"sycl_kernel_attrs_desc">];
+  let Subjects = SubjectList<[Function]>;
+  let LangOpts = [SYCLIsDevice];
+  let Args = [VariadicUnsignedArgument<"allArgs">];
+  let Documentation = [Undocumented];
+}
+
 def SYCLDevice : InheritableAttr {
   let Spellings = [GNU<"sycl_device">];
   let Subjects = SubjectList<[Function, GlobalStorageNonLocalVar]>;
