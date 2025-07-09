@@ -570,7 +570,7 @@ public:
   ur_mem_handle_t &get_spec_const_buffer_ref() noexcept {
     std::lock_guard<std::mutex> Lock{MSpecConstAccessMtx};
     if (nullptr == MSpecConstsBuffer && !MSpecConstsBlob.empty()) {
-      const AdapterPtr &Adapter = getSyclObjImpl(MContext)->getAdapter();
+      adapter_impl &Adapter = getSyclObjImpl(MContext)->getAdapter();
       //  Uses UR_MEM_FLAGS_HOST_PTR_COPY instead of UR_MEM_FLAGS_HOST_PTR_USE
       //  since post-enqueue cleanup might trigger destruction of
       //  device_image_impl and, as a result, destruction of MSpecConstsBlob
@@ -602,11 +602,10 @@ public:
   ur_native_handle_t getNative() const {
     assert(MProgram);
     context_impl &ContextImpl = *detail::getSyclObjImpl(MContext);
-    const AdapterPtr &Adapter = ContextImpl.getAdapter();
+    adapter_impl &Adapter = ContextImpl.getAdapter();
 
     ur_native_handle_t NativeProgram = 0;
-    Adapter->call<UrApiKind::urProgramGetNativeHandle>(MProgram,
-                                                       &NativeProgram);
+    Adapter.call<UrApiKind::urProgramGetNativeHandle>(MProgram, &NativeProgram);
     if (ContextImpl.getBackend() == backend::opencl)
       __SYCL_OCL_CALL(clRetainProgram, ur::cast<cl_program>(NativeProgram));
 
@@ -616,12 +615,12 @@ public:
   ~device_image_impl() {
     try {
       if (MProgram) {
-        const AdapterPtr &Adapter = getSyclObjImpl(MContext)->getAdapter();
-        Adapter->call<UrApiKind::urProgramRelease>(MProgram);
+        adapter_impl &Adapter = getSyclObjImpl(MContext)->getAdapter();
+        Adapter.call<UrApiKind::urProgramRelease>(MProgram);
       }
       if (MSpecConstsBuffer) {
         std::lock_guard<std::mutex> Lock{MSpecConstAccessMtx};
-        const AdapterPtr &Adapter = getSyclObjImpl(MContext)->getAdapter();
+        adapter_impl &Adapter = getSyclObjImpl(MContext)->getAdapter();
         memReleaseHelper(Adapter, MSpecConstsBuffer);
       }
     } catch (std::exception &e) {
@@ -751,24 +750,24 @@ public:
           Devices, BuildOptions, *SourceStrPtr, UrProgram);
     }
 
-    const AdapterPtr &Adapter = ContextImpl.getAdapter();
+    adapter_impl &Adapter = ContextImpl.getAdapter();
 
     if (!FetchedFromCache)
       UrProgram = createProgramFromSource(Devices, BuildOptions, LogPtr);
 
     std::string XsFlags = extractXsFlags(BuildOptions, MRTCBinInfo->MLanguage);
-    auto Res = Adapter->call_nocheck<UrApiKind::urProgramBuildExp>(
+    auto Res = Adapter.call_nocheck<UrApiKind::urProgramBuildExp>(
         UrProgram, static_cast<uint32_t>(DeviceVec.size()), DeviceVec.data(),
         XsFlags.c_str());
     if (Res == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
-      Res = Adapter->call_nocheck<UrApiKind::urProgramBuild>(
+      Res = Adapter.call_nocheck<UrApiKind::urProgramBuild>(
           ContextImpl.getHandleRef(), UrProgram, XsFlags.c_str());
     }
-    Adapter->checkUrResult<errc::build>(Res);
+    Adapter.checkUrResult<errc::build>(Res);
 
     // Get the number of kernels in the program.
     size_t NumKernels;
-    Adapter->call<UrApiKind::urProgramGetInfo>(
+    Adapter.call<UrApiKind::urProgramGetInfo>(
         UrProgram, UR_PROGRAM_INFO_NUM_KERNELS, sizeof(size_t), &NumKernels,
         nullptr);
 
@@ -884,7 +883,7 @@ private:
       const std::vector<sycl::detail::string_view> &BuildOptions,
       const std::string &SourceStr, ur_program_handle_t &UrProgram) const {
     sycl::detail::context_impl &ContextImpl = *getSyclObjImpl(MContext);
-    const AdapterPtr &Adapter = ContextImpl.getAdapter();
+    adapter_impl &Adapter = ContextImpl.getAdapter();
 
     std::string UserArgs = syclex::detail::userArgsAsString(BuildOptions);
 
@@ -912,7 +911,7 @@ private:
     Properties.count = 0;
     Properties.pMetadatas = nullptr;
 
-    Adapter->call<UrApiKind::urProgramCreateWithBinary>(
+    Adapter.call<UrApiKind::urProgramCreateWithBinary>(
         ContextImpl.getHandleRef(), static_cast<uint32_t>(DeviceHandles.size()),
         DeviceHandles.data(), Lengths.data(), Binaries.data(), &Properties,
         &UrProgram);
@@ -1208,7 +1207,7 @@ private:
                           const std::vector<sycl::detail::string_view> &Options,
                           std::string *LogPtr) const {
     sycl::detail::context_impl &ContextImpl = *getSyclObjImpl(MContext);
-    const AdapterPtr &Adapter = ContextImpl.getAdapter();
+    adapter_impl &Adapter = ContextImpl.getAdapter();
     const auto spirv = [&]() -> std::vector<uint8_t> {
       switch (MRTCBinInfo->MLanguage) {
       case syclex::source_language::opencl: {
@@ -1219,7 +1218,7 @@ private:
         std::transform(Devices.begin(), Devices.end(), IPVersionVec.begin(),
                        [&](const sycl::device &SyclDev) {
                          uint32_t ipVersion = 0;
-                         Adapter->call<UrApiKind::urDeviceGetInfo>(
+                         Adapter.call<UrApiKind::urDeviceGetInfo>(
                              getSyclObjImpl(SyclDev)->getHandleRef(),
                              UR_DEVICE_INFO_IP_VERSION, sizeof(uint32_t),
                              &ipVersion, nullptr);
@@ -1245,9 +1244,9 @@ private:
     }();
 
     ur_program_handle_t UrProgram = nullptr;
-    Adapter->call<UrApiKind::urProgramCreateWithIL>(ContextImpl.getHandleRef(),
-                                                    spirv.data(), spirv.size(),
-                                                    nullptr, &UrProgram);
+    Adapter.call<UrApiKind::urProgramCreateWithIL>(ContextImpl.getHandleRef(),
+                                                   spirv.data(), spirv.size(),
+                                                   nullptr, &UrProgram);
     // program created by urProgramCreateWithIL is implicitly retained.
     if (UrProgram == nullptr)
       throw sycl::exception(
@@ -1258,16 +1257,16 @@ private:
   }
 
   static std::vector<std::string>
-  getKernelNamesFromURProgram(const AdapterPtr &Adapter,
+  getKernelNamesFromURProgram(adapter_impl &Adapter,
                               ur_program_handle_t UrProgram) {
     // Get the kernel names.
     size_t KernelNamesSize;
-    Adapter->call<UrApiKind::urProgramGetInfo>(
+    Adapter.call<UrApiKind::urProgramGetInfo>(
         UrProgram, UR_PROGRAM_INFO_KERNEL_NAMES, 0u, nullptr, &KernelNamesSize);
 
     // semi-colon delimited list of kernel names.
     std::string KernelNamesStr(KernelNamesSize, ' ');
-    Adapter->call<UrApiKind::urProgramGetInfo>(
+    Adapter.call<UrApiKind::urProgramGetInfo>(
         UrProgram, UR_PROGRAM_INFO_KERNEL_NAMES, KernelNamesStr.size(),
         &KernelNamesStr[0], nullptr);
     return detail::split_string(KernelNamesStr, ';');
