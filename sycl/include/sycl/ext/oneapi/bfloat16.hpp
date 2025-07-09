@@ -165,12 +165,8 @@ inline float bfloat16::to_float(const bfloat16::Bfloat16StorageT &a) {
 #if defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))
   return __devicelib_ConvertBF16ToFINTEL(a);
 #else
-  union {
-    uint32_t intStorage;
-    float floatValue;
-  };
-  intStorage = a << 16;
-  return floatValue;
+  int32_t intValue = a << 16;
+  return sycl::bit_cast<float>(intValue);
 #endif
 }
 

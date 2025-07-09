@@ -144,7 +144,7 @@ sycl_device_binaries DeviceBinariesCollection::getPIDeviceStruct() {
 
   PIStruct = std::make_unique<sycl_device_binaries_struct>();
   PIStruct->Version = SYCL_DEVICE_BINARIES_VERSION;
-  PIStruct->NumDeviceBinaries = PIBinaries.size();
+  PIStruct->NumDeviceBinaries = static_cast<uint16_t>(PIBinaries.size());
   PIStruct->DeviceBinaries = PIBinaries.data();
   // According to documentation in ur.hpp, the HostEntries are not used and
   // can therefore be null.

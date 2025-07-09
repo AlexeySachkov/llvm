@@ -79,8 +79,8 @@ struct code_location {
 #undef __CODELOC_LINE
 #undef __CODELOC_COLUMN
 
-  constexpr code_location(const char *file, const char *func, int line,
-                          int col) noexcept
+  constexpr code_location(const char *file, const char *func,
+                          unsigned long line, unsigned long col) noexcept
       : MFileName(file), MFunctionName(func), MLineNo(line), MColumnNo(col) {}
 
   constexpr code_location() noexcept

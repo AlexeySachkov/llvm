@@ -58,7 +58,7 @@ struct HashCStr {
     char Ch = 0;
 
     for (; (Ch = *S); S++) {
-      Res += Ch + (Prime * Res);
+      Res += static_cast<size_t>(Ch) + (Prime * Res);
     }
     return Res;
   }
