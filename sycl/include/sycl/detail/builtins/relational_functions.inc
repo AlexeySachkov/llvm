@@ -281,13 +281,16 @@ std::enable_if_t<detail::rel_enable_select_v<T0, T1, T2>,
 select(T0 a, T1 b, T2 c) {
   if constexpr (detail::is_marray_v<T0>) {
     T0 ret;
-    for (size_t i = 0; i < T0::size(); ++i)
+    for (int i = 0; i < T0::size(); ++i)
       ret[i] = (c[i] ? b[i] : a[i]);
     return ret;
   } else {
     detail::simplify_if_swizzle_t<T0> ret;
-    for (size_t i = 0; i < ret.size(); ++i)
-      ret[i] = (detail::msbIsSet(c[i]) ? b[i] : a[i]);
+    for (detail::index_type_t<T2> i = 0; i < ret.size(); ++i) {
+      auto j = static_cast<index_type_t<T1>>(i);
+      auto k = static_cast<index_type_t<T0>>(i);
+      ret[i] = (detail::msbIsSet(c[i]) ? b[j] : a[k]);
+    }
     return ret;
   }
 }

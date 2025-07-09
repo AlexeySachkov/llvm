@@ -163,9 +163,11 @@ void *UnsampledImageAccessorBaseHost::getPtr() { return impl->MData; }
 void *UnsampledImageAccessorBaseHost::getPtr() const {
   return const_cast<void *>(impl->MData);
 }
-int UnsampledImageAccessorBaseHost::getNumOfDims() const { return impl->MDims; }
+int UnsampledImageAccessorBaseHost::getNumOfDims() const {
+  return static_cast<int>(impl->MDims);
+}
 int UnsampledImageAccessorBaseHost::getElementSize() const {
-  return impl->MElemSize;
+  return static_cast<int>(impl->MElemSize);
 }
 id<3> UnsampledImageAccessorBaseHost::getPitch() const { return impl->MPitch; }
 image_channel_type UnsampledImageAccessorBaseHost::getChannelType() const {
@@ -205,9 +207,11 @@ void *SampledImageAccessorBaseHost::getPtr() { return impl->MData; }
 void *SampledImageAccessorBaseHost::getPtr() const {
   return const_cast<void *>(impl->MData);
 }
-int SampledImageAccessorBaseHost::getNumOfDims() const { return impl->MDims; }
+int SampledImageAccessorBaseHost::getNumOfDims() const {
+  return static_cast<int>(impl->MDims);
+}
 int SampledImageAccessorBaseHost::getElementSize() const {
-  return impl->MElemSize;
+  return static_cast<int>(impl->MElemSize);
 }
 id<3> SampledImageAccessorBaseHost::getPitch() const { return impl->MPitch; }
 image_channel_type SampledImageAccessorBaseHost::getChannelType() const {

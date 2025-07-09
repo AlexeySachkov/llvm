@@ -73,7 +73,7 @@ uint8_t getImageNumberChannels(image_channel_order Order) {
 
 // Returns the number of bytes per image element
 uint8_t getImageElementSize(uint8_t NumChannels, image_channel_type Type) {
-  size_t Retval = 0;
+  uint8_t Retval = 0;
   switch (Type) {
   case image_channel_type::snorm_int8:
   case image_channel_type::unorm_int8:

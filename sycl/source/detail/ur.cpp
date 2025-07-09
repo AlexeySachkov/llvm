@@ -311,7 +311,7 @@ static ResT readELFValue(const unsigned char *Data, size_t NumBytes,
   ResT Result = 0;
   if (IsBigEndian) {
     for (size_t I = 0; I < NumBytes; ++I) {
-      Result = (Result << 8) | static_cast<ResT>(Data[I]);
+      Result = static_cast<ResT>((Result << 8) | static_cast<ResT>(Data[I]));
     }
   } else {
     std::copy(Data, Data + NumBytes, reinterpret_cast<char *>(&Result));
@@ -448,7 +448,8 @@ ur_program_metadata_t mapDeviceBinaryPropertyToProgramMetadata(
   switch (DeviceBinaryProperty->Type) {
   case SYCL_PROPERTY_TYPE_UINT32:
     URMetadata.type = UR_PROGRAM_METADATA_TYPE_UINT32;
-    URMetadata.value.data32 = DeviceBinaryProperty->ValSize;
+    URMetadata.value.data32 =
+        static_cast<uint32_t>(DeviceBinaryProperty->ValSize);
     break;
   case SYCL_PROPERTY_TYPE_BYTE_ARRAY:
     URMetadata.type = UR_PROGRAM_METADATA_TYPE_BYTE_ARRAY;

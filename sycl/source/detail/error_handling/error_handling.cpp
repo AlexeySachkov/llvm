@@ -289,7 +289,7 @@ void handleInvalidWorkGroupSize(const device_impl &DeviceImpl,
               &Program, nullptr);
           size_t OptsSize = 0;
           Adapter->call<UrApiKind::urProgramGetBuildInfo>(
-              Program, Device, UR_PROGRAM_BUILD_INFO_OPTIONS, 0, nullptr,
+              Program, Device, UR_PROGRAM_BUILD_INFO_OPTIONS, 0u, nullptr,
               &OptsSize);
           std::string Opts(OptsSize, '\0');
           Adapter->call<UrApiKind::urProgramGetBuildInfo>(

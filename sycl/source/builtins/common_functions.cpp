@@ -26,11 +26,13 @@ inline namespace _V1 {
   HOST_IMPL(NAME, IMPL)                                                        \
   EXPORT_SCALAR_AND_VEC_1_16(NUM_ARGS, NAME, FP_TYPES)
 
-BUILTIN_COMMON(ONE_ARG, degrees,
-               [](auto x) -> decltype(x) { return (180 / M_PI) * x; })
+BUILTIN_COMMON(ONE_ARG, degrees, [](auto x) -> decltype(x) {
+  return (static_cast<decltype(x)>(180.0) / static_cast<decltype(x)>(M_PI)) * x;
+})
 
-BUILTIN_COMMON(ONE_ARG, radians,
-               [](auto x) -> decltype(x) { return (M_PI / 180) * x; })
+BUILTIN_COMMON(ONE_ARG, radians, [](auto x) -> decltype(x) {
+  return (static_cast<decltype(x)>(M_PI) / static_cast<decltype(x)>(180.0)) * x;
+})
 
 BUILTIN_COMMON(ONE_ARG, sign, [](auto x) -> decltype(x) {
   using T = decltype(x);

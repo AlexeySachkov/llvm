@@ -39,7 +39,8 @@ size_t LeavesCollection::remove(value_type Cmd) {
   if (!isHostAccessorCmd(Cmd)) {
     auto NewEnd =
         std::remove(MGenericCommands.begin(), MGenericCommands.end(), Cmd);
-    size_t RemovedCount = std::distance(NewEnd, MGenericCommands.end());
+    auto RemovedCount =
+        static_cast<size_t>(std::distance(NewEnd, MGenericCommands.end()));
     MGenericCommands.erase(NewEnd, MGenericCommands.end());
 
     return RemovedCount;

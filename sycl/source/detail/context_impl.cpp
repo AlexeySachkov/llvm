@@ -55,7 +55,8 @@ context_impl::context_impl(const std::vector<sycl::device> Devices,
   }
 
   getAdapter()->call<UrApiKind::urContextCreate>(
-      DeviceIds.size(), DeviceIds.data(), nullptr, &MContext);
+      static_cast<uint32_t>(DeviceIds.size()), DeviceIds.data(), nullptr,
+      &MContext);
 
   MKernelProgramCache.setContextPtr(this);
 }
@@ -440,8 +441,8 @@ std::vector<ur_event_handle_t> context_impl::initializeDeviceGlobals(
       void *const &USMPtr = DeviceGlobalUSM.getPtr();
       Adapter->call<UrApiKind::urEnqueueDeviceGlobalVariableWrite>(
           QueueImpl.getHandleRef(), NativePrg,
-          DeviceGlobalEntry->MUniqueId.c_str(), false, sizeof(void *), 0,
-          &USMPtr, 0, nullptr, &InitEvent);
+          DeviceGlobalEntry->MUniqueId.c_str(), false, sizeof(void *), 0u,
+          &USMPtr, 0u, nullptr, &InitEvent);
 
       InitEventsRef.push_back(InitEvent);
     }

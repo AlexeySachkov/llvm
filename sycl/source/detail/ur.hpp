@@ -48,7 +48,7 @@ std::string urGetInfoString(SyclImplTy &SyclImpl, DescTy Desc) {
   size_t ResultSize = 0;
   auto Handle = SyclImpl.getHandleRef();
   Adapter->template call<ApiKind>(Handle, Desc,
-                                  /*propSize=*/0,
+                                  /*propSize=*/0u,
                                   /*pPropValue=*/nullptr, &ResultSize);
   if (ResultSize == 0)
     return std::string{};

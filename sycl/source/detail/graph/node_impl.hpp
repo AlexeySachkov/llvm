@@ -518,7 +518,8 @@ private:
         }
         NewArgStorage.emplace_back(Arg.MSize);
         // Memcpy contents from old storage to new storage
-        std::memcpy(NewArgStorage.back().data(), ArgStorage.data(), Arg.MSize);
+        std::memcpy(NewArgStorage.back().data(), ArgStorage.data(),
+                    static_cast<size_t>(Arg.MSize));
         // Update MPtr to point to the new storage instead of the old
         Arg.MPtr = NewArgStorage.back().data();
 

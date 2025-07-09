@@ -330,8 +330,8 @@ getBFloat16FromFloatWithRoundingMode(const float &f,
   if (bf16_exp == 0xFF) {
     if (!f_mant)
       return bit_cast<bfloat16, uint16_t>(bf16_sign ? 0xFF80 : 0x7F80);
-    return bit_cast<bfloat16, uint16_t>((bf16_sign << 15) | (bf16_exp << 7) |
-                                        bf16_mant);
+    return bit_cast<bfloat16>(
+        static_cast<uint16_t>((bf16_sign << 15) | (bf16_exp << 7) | bf16_mant));
   }
 
   // +/-0
@@ -365,8 +365,8 @@ getBFloat16FromFloatWithRoundingMode(const float &f,
     bf16_exp++;
   }
 
-  return bit_cast<bfloat16, uint16_t>((bf16_sign << 15) | (bf16_exp << 7) |
-                                      bf16_mant);
+  return bit_cast<bfloat16>(
+      static_cast<uint16_t>((bf16_sign << 15) | (bf16_exp << 7) | bf16_mant));
 }
 
 // Helper function to get BF16 from double with RTE rounding modes.
@@ -419,7 +419,7 @@ inline bfloat16 getBFloat16FromDoubleWithRTE(const double &d) {
       bf16_mant = 0;
       fp64_exp = 1;
     }
-    return (bf16_sign << 15) | (fp64_exp << 7) | bf16_mant;
+    return static_cast<float>((bf16_sign << 15) | (fp64_exp << 7) | bf16_mant);
   }
 
   // For normal value, discard 45 bits from mantissa
@@ -437,7 +437,7 @@ inline bfloat16 getBFloat16FromDoubleWithRTE(const double &d) {
   }
   fp64_exp += 127;
 
-  return (bf16_sign << 15) | (fp64_exp << 7) | bf16_mant;
+  return static_cast<float>((bf16_sign << 15) | (fp64_exp << 7) | bf16_mant);
 }
 
 // Function to get the most significant bit position of a number.
@@ -472,7 +472,7 @@ getBFloat16FromUIntegralWithRoundingMode(T &u, SYCLRoundingMode roundingMode) {
   // msb_pos is also the bit number of mantissa, 0 < msb_pos < sizeof(Ty) * 8,
   // exponent of bfloat16 precision value range is [-126, 127].
 
-  uint16_t b_exp = msb_pos;
+  auto b_exp = static_cast<uint16_t>(msb_pos);
   uint16_t b_mant;
 
   if (msb_pos <= 7) {
@@ -506,7 +506,8 @@ getBFloat16FromUIntegralWithRoundingMode(T &u, SYCLRoundingMode roundingMode) {
   }
 
   b_exp += 127;
-  return bit_cast<bfloat16, uint16_t>((b_exp << 7) | b_mant);
+  return bit_cast<bfloat16>(
+      static_cast<uint16_t>((b_exp << 7) | b_mant));
 }
 
 // Helper function to get BF16 from signed integral data types.
@@ -525,7 +526,7 @@ getBFloat16FromSIntegralWithRoundingMode(T &i, SYCLRoundingMode roundingMode) {
     return bit_cast<bfloat16, uint16_t>(b_sign ? 0xBF80 : 0x3F80);
   UTy mant = ui & ((static_cast<UTy>(1) << msb_pos) - 1);
 
-  uint16_t b_exp = msb_pos;
+  auto b_exp = static_cast<uint16_t>(msb_pos);
   uint16_t b_mant;
   if (msb_pos <= 7) {
     mant <<= (7 - msb_pos);
@@ -558,7 +559,8 @@ getBFloat16FromSIntegralWithRoundingMode(T &i, SYCLRoundingMode roundingMode) {
     b_mant = 0;
   }
   b_exp += 127;
-  return bit_cast<bfloat16, uint16_t>(b_sign | (b_exp << 7) | b_mant);
+  return bit_cast<bfloat16>(
+      static_cast<uint16_t>(b_sign | (b_exp << 7) | b_mant));
 }
 
 /// \brief Converts a given value to bfloat16 with a specified rounding mode.

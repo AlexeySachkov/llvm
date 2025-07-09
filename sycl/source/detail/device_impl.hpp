@@ -114,7 +114,7 @@ class device_impl : public std::enable_shared_from_this<device_impl> {
   bool has_info_desc(ur_device_info_t Desc) const {
     size_t return_size = 0;
     return getAdapter()->call_nocheck<UrApiKind::urDeviceGetInfo>(
-               MDevice, Desc, 0, nullptr, &return_size) == UR_RESULT_SUCCESS;
+               MDevice, Desc, 0u, nullptr, &return_size) == UR_RESULT_SUCCESS;
   }
 
   // This should really be
@@ -131,7 +131,7 @@ class device_impl : public std::enable_shared_from_this<device_impl> {
       if (auto *p = std::get_if<0>(static_cast<const base *>(this)))
         return *p;
       else
-        return std::forward<U>(default_value);
+        return static_cast<T>(std::forward<U>(default_value));
     }
     template <typename G> E error_or(G &&default_error) const {
       if (auto *p = std::get_if<1>(static_cast<const base *>(this)))
@@ -154,7 +154,7 @@ class device_impl : public std::enable_shared_from_this<device_impl> {
       size_t ResultSize = 0;
       ur_result_t Error =
           getAdapter()->call_nocheck<UrApiKind::urDeviceGetInfo>(
-              getHandleRef(), Desc, 0, nullptr, &ResultSize);
+              getHandleRef(), Desc, 0u, nullptr, &ResultSize);
       if (Error != UR_RESULT_SUCCESS)
         return {Error};
       if (ResultSize == 0)
@@ -188,7 +188,7 @@ class device_impl : public std::enable_shared_from_this<device_impl> {
         return urGetInfoString<UrApiKind::urDeviceGetInfo>(*this, Desc);
       } else if constexpr (is_std_vector_v<ur_ret_t>) {
         size_t ResultSize = 0;
-        getAdapter()->call<UrApiKind::urDeviceGetInfo>(getHandleRef(), Desc, 0,
+        getAdapter()->call<UrApiKind::urDeviceGetInfo>(getHandleRef(), Desc, 0u,
                                                        nullptr, &ResultSize);
         if (ResultSize == 0)
           return ur_ret_t{};
@@ -1644,7 +1644,8 @@ public:
     const int forwardProgressGuaranteeSize = 3;
     int guaranteeVal = static_cast<int>(guarantee);
     std::vector<ext::oneapi::experimental::forward_progress_guarantee> res;
-    res.reserve(forwardProgressGuaranteeSize - guaranteeVal);
+    res.reserve(
+        static_cast<size_t>(forwardProgressGuaranteeSize - guaranteeVal));
     for (int currentGuarantee = forwardProgressGuaranteeSize - 1;
          currentGuarantee >= guaranteeVal; --currentGuarantee) {
       res.emplace_back(

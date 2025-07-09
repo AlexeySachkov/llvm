@@ -15,13 +15,14 @@ inline namespace _V1 {
 namespace detail {
 using KernelArgMask = std::vector<bool>;
 inline KernelArgMask createKernelArgMask(const ByteArray &Bytes) {
-  const int NBytesForSize = 8;
+  const size_t NBytesForSize = 8;
   const int NBitsInElement = 8;
   std::uint64_t SizeInBits = 0;
 
   KernelArgMask Result;
-  for (int I = 0; I < NBytesForSize; ++I)
-    SizeInBits |= static_cast<std::uint64_t>(Bytes[I]) << I * NBitsInElement;
+  for (size_t I = 0; I < NBytesForSize; ++I)
+    SizeInBits |= static_cast<std::uint64_t>(
+        static_cast<std::uint64_t>(Bytes[I]) << I * NBitsInElement);
 
   Result.reserve(SizeInBits);
   for (std::uint64_t I = 0; I < SizeInBits; ++I) {

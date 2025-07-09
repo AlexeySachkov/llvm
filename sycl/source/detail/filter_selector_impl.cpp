@@ -90,7 +90,7 @@ filter create_filter(const std::string &Input) {
 filter_selector_impl::filter_selector_impl(const std::string &Input)
     : mFilters(), mNumDevicesSeen(0), mMatchFound(false) {
   std::vector<std::string> Filters = detail::tokenize(Input, ",");
-  mNumTotalDevices = device::get_devices().size();
+  mNumTotalDevices = static_cast<int>(device::get_devices().size());
 
   for (const std::string &Filter : Filters) {
     detail::filter F = detail::create_filter(Filter);

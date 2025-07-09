@@ -240,7 +240,7 @@ void dynamic_work_group_memory_impl::updateCGWorkGroupMem(
       continue;
     }
     assert(Arg.MType == sycl::detail::kernel_param_kind_t::kind_std_layout);
-    Arg.MSize = NewBufferSizeInBytes;
+    Arg.MSize = static_cast<int>(NewBufferSizeInBytes);
     break;
   }
 }
@@ -285,7 +285,8 @@ void dynamic_local_accessor_impl::updateCGLocalAccessor(
     assert(Arg.MType == sycl::detail::kernel_param_kind_t::kind_std_layout);
 
     // Update the local memory Size Argument
-    Arg.MSize = NewAllocationSize.size() * LAccImplHost.MElemSize;
+    Arg.MSize =
+        static_cast<int>(NewAllocationSize.size()) * LAccImplHost.MElemSize;
 
     // MSize is used as an argument to the AccField kernel parameters.
     LAccImplHost.MSize = NewAllocationSize;

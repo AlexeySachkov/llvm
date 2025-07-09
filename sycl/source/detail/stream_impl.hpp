@@ -51,7 +51,7 @@ private:
 
   // Maximum number of symbols which could be streamed from the beginning of a
   // statement till the semicolon
-  unsigned MaxStatementSize_;
+  size_t MaxStatementSize_;
 
   // Property list
   property_list PropList_;

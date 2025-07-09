@@ -50,8 +50,8 @@ template <typename T> inline T __u_long_mul_hi(T a, T b) {
 
 template <typename T> inline T __s_long_mul_hi(T a, T b) {
   using UT = std::make_unsigned_t<T>;
-  UT absA = std::abs(a);
-  UT absB = std::abs(b);
+  auto absA = static_cast<UT>(std::abs(a));
+  auto absB = static_cast<UT>(std::abs(b));
 
   UT a0b0, a0b1, a1b0, a1b1;
   __get_half_products(absA, absB, a0b0, a0b1, a1b0, a1b1);
@@ -83,7 +83,7 @@ inline namespace _V1 {
 
 BUILTIN_GENINT(ONE_ARG, abs, [](auto x) -> decltype(x) {
   if constexpr (std::is_signed_v<decltype(x)>) {
-    return std::abs(x);
+    return static_cast<decltype(x)>(std::abs(x));
   } else {
     return x;
   }
@@ -92,7 +92,7 @@ BUILTIN_GENINT(ONE_ARG, abs, [](auto x) -> decltype(x) {
 BUILTIN_GENINT_SU(TWO_ARGS, abs_diff, [](auto x, auto y) -> decltype(x) {
   if constexpr (std::is_signed_v<decltype(x)>)
     if ((x < 0) != (y < 0))
-      return std::abs(x) + std::abs(y);
+      return static_cast<decltype(x)>(std::abs(x) + std::abs(y));
 
   return std::max(x, y) - std::min(x, y);
 })
@@ -193,7 +193,7 @@ BUILTIN_GENINT_SU(TWO_ARGS, mul_hi, [](auto a, auto b) -> decltype(a) {
     UPT a_s = a;
     UPT b_s = b;
     UPT mul = a_s * b_s;
-    return (mul >> (sizeof(T) * 8));
+    return static_cast<T>(mul >> (sizeof(T) * 8));
   }
 })
 
@@ -201,7 +201,7 @@ BUILTIN_GENINT_SU(TWO_ARGS, sub_sat, [](auto x, auto y) -> decltype(x) {
   using T = decltype(x);
   if constexpr (std::is_signed_v<T>) {
     using UT = std::make_unsigned_t<T>;
-    T result = UT(x) - UT(y);
+    T result = static_cast<T>(UT(x) - UT(y));
     // Saturate result if (+) - (-) = (-) or (-) - (+) = (+).
     if (((x < 0) ^ (y < 0)) && ((x < 0) ^ (result < 0)))
       result = result < 0 ? std::numeric_limits<T>::max()

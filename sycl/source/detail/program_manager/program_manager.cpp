@@ -62,7 +62,7 @@ static void enableITTAnnotationsIfNeeded(const ur_program_handle_t &Prog,
     ur_specialization_constant_info_t SpecConstInfo = {
         ITTSpecConstId, sizeof(char), &SpecValue};
     Adapter->call<UrApiKind::urProgramSetSpecializationConstants>(
-        Prog, 1, &SpecConstInfo);
+        Prog, 1u, &SpecConstInfo);
   }
 }
 
@@ -84,13 +84,13 @@ createBinaryProgram(context_impl &Context, const std::vector<device> &Devices,
   ur_program_properties_t Properties = {};
   Properties.stype = UR_STRUCTURE_TYPE_PROGRAM_PROPERTIES;
   Properties.pNext = nullptr;
-  Properties.count = Metadata.size();
+  Properties.count = static_cast<uint32_t>(Metadata.size());
   Properties.pMetadatas = Metadata.data();
 
   assert(Devices.size() > 0 && "No devices provided for program creation");
   Adapter->call<UrApiKind::urProgramCreateWithBinary>(
-      Context.getHandleRef(), DeviceHandles.size(), DeviceHandles.data(),
-      Lengths, Binaries, &Properties, &Program);
+      Context.getHandleRef(), static_cast<uint32_t>(DeviceHandles.size()),
+      DeviceHandles.data(), Lengths, Binaries, &Properties, &Program);
   if (BinaryStatus != UR_RESULT_SUCCESS) {
     throw detail::set_ur_error(
         exception(make_error_code(errc::runtime),
@@ -282,8 +282,8 @@ static std::string getUint32PropAsOptStr(const RTDeviceBinaryImage &Img,
   std::stringstream ss;
   if (!Prop)
     return "";
-  int optLevel = DeviceBinaryProperty(Prop).asUint32();
-  if (optLevel < 0 || optLevel > 3)
+  uint32_t optLevel = DeviceBinaryProperty(Prop).asUint32();
+  if (optLevel > 3)
     return "";
   ss << "-O" << optLevel;
   std::string temp = ss.str();
@@ -598,7 +598,7 @@ static bool compatibleWithDevice(const RTDeviceBinaryImage *BinImage,
 
   ur_result_t Error = Adapter->call_nocheck<UrApiKind::urDeviceSelectBinary>(
       URDeviceHandle, &UrBinary,
-      /*num bin images = */ (uint32_t)1, &SuitableImageID);
+      /*num bin images = */ 1u, &SuitableImageID);
   if (Error != UR_RESULT_SUCCESS && Error != UR_RESULT_ERROR_INVALID_BINARY)
     throw detail::set_ur_error(exception(make_error_code(errc::runtime),
                                          "Invalid binary image or device"),
@@ -852,7 +852,7 @@ static void setSpecializationConstants(device_image_impl &InputImpl,
             SpecIDDesc.ID, SpecIDDesc.Size,
             SpecConsts.data() + SpecIDDesc.BlobOffset};
         Adapter->call<UrApiKind::urProgramSetSpecializationConstants>(
-            Prog, 1, &SpecConstInfo);
+            Prog, 1u, &SpecConstInfo);
       }
     }
   }
@@ -1026,7 +1026,7 @@ ur_program_handle_t ProgramManager::getBuiltURProgram(
   if (!SYCLConfig<SYCL_CACHE_IN_MEM>::get())
     return BuildF();
 
-  uint32_t ImgId = ImgWithDeps.getMain()->getImageID();
+  auto ImgId = static_cast<uint32_t>(ImgWithDeps.getMain()->getImageID());
   std::set<ur_device_handle_t> URDevicesSet;
   std::transform(Devs.begin(), Devs.end(),
                  std::inserter(URDevicesSet, URDevicesSet.begin()),
@@ -1065,7 +1065,7 @@ ur_program_handle_t ProgramManager::getBuiltURProgram(
       const RTDeviceBinaryImage *BImg = *It;
       // CacheKey is captured by reference by GetCachedBuildF, so we can simply
       // update it here and re-use that lambda.
-      CacheKey.first.second = BImg->getImageID();
+      CacheKey.first.second = static_cast<unsigned>(BImg->getImageID());
       bool DidInsert = Cache.insertBuiltProgram(CacheKey, ResProgram);
       // Add to the eviction list.
       Cache.registerProgramFetch(CacheKey, ResProgram, DidInsert);
@@ -1217,7 +1217,7 @@ ProgramManager::getProgramBuildLog(const ur_program_handle_t &Program,
   size_t URDevicesSize = 0;
   const AdapterPtr &Adapter = Context.getAdapter();
   Adapter->call<UrApiKind::urProgramGetInfo>(Program, UR_PROGRAM_INFO_DEVICES,
-                                             0, nullptr, &URDevicesSize);
+                                             0u, nullptr, &URDevicesSize);
   std::vector<ur_device_handle_t> URDevices(URDevicesSize /
                                             sizeof(ur_device_handle_t));
   Adapter->call<UrApiKind::urProgramGetInfo>(Program, UR_PROGRAM_INFO_DEVICES,
@@ -1229,7 +1229,7 @@ ProgramManager::getProgramBuildLog(const ur_program_handle_t &Program,
     std::string DeviceBuildInfoString;
     size_t DeviceBuildInfoStrSize = 0;
     Adapter->call<UrApiKind::urProgramGetBuildInfo>(
-        Program, Device, UR_PROGRAM_BUILD_INFO_LOG, 0, nullptr,
+        Program, Device, UR_PROGRAM_BUILD_INFO_LOG, 0u, nullptr,
         &DeviceBuildInfoStrSize);
     if (DeviceBuildInfoStrSize > 0) {
       std::vector<char> DeviceBuildInfo(DeviceBuildInfoStrSize);
@@ -1241,7 +1241,7 @@ ProgramManager::getProgramBuildLog(const ur_program_handle_t &Program,
 
     std::string DeviceNameString;
     size_t DeviceNameStrSize = 0;
-    Adapter->call<UrApiKind::urDeviceGetInfo>(Device, UR_DEVICE_INFO_NAME, 0,
+    Adapter->call<UrApiKind::urDeviceGetInfo>(Device, UR_DEVICE_INFO_NAME, 0u,
                                               nullptr, &DeviceNameStrSize);
     if (DeviceNameStrSize > 0) {
       std::vector<char> DeviceName(DeviceNameStrSize);
@@ -1269,14 +1269,14 @@ static bool loadDeviceLib(context_impl &Context, const char *Name,
   }
 
   File.seekg(0, std::ios::end);
-  size_t FileSize = File.tellg();
+  auto FileSize = static_cast<size_t>(File.tellg());
   File.seekg(0, std::ios::beg);
   std::vector<char> FileContent(FileSize);
-  File.read(&FileContent[0], FileSize);
+  File.read(&FileContent[0], static_cast<std::streamsize>(FileSize));
   File.close();
 
-  Prog =
-      createSpirvProgram(Context, (unsigned char *)&FileContent[0], FileSize);
+  Prog = createSpirvProgram(Context, (unsigned char *)&FileContent[0],
+                            static_cast<size_t>(FileSize));
   return Prog != nullptr;
 }
 
@@ -1343,13 +1343,13 @@ static const char *getDeviceLibExtensionStr(DeviceLibExt Extension) {
 }
 
 static ur_result_t doCompile(const AdapterPtr &Adapter,
-                             ur_program_handle_t Program, uint32_t NumDevs,
+                             ur_program_handle_t Program, size_t NumDevs,
                              ur_device_handle_t *Devs, ur_context_handle_t Ctx,
                              const char *Opts) {
   // Try to compile with given devices, fall back to compiling with the program
   // context if unsupported by the adapter
   auto Result = Adapter->call_nocheck<UrApiKind::urProgramCompileExp>(
-      Program, NumDevs, Devs, Opts);
+      Program, static_cast<uin32_t>(NumDevs), Devs, Opts);
   if (Result == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
     return Adapter->call_nocheck<UrApiKind::urProgramCompile>(Ctx, Program,
                                                               Opts);
@@ -1455,11 +1455,11 @@ ProgramManager::ProgramManager()
                       std::string("Can't open file specified via ") +
                           UseSpvEnv + ": " + SpvFile);
     File.seekg(0, std::ios::end);
-    size_t Size = File.tellg();
+    auto Size = static_cast<size_t>(File.tellg());
     std::unique_ptr<char[], std::function<void(void *)>> Data(new char[Size],
                                                               std::free);
     File.seekg(0);
-    File.read(Data.get(), Size);
+    File.read(Data.get(), static_cast<std::streamsize>(Size));
     File.close();
     if (!File.good())
       throw exception(make_error_code(errc::runtime),
@@ -1510,7 +1510,8 @@ const RTDeviceBinaryImage *getBinImageFromMultiMap(
   // This selection will then be passed to urDeviceSelectBinary
   // for final selection.
   std::vector<const RTDeviceBinaryImage *> DeviceFilteredImgs;
-  DeviceFilteredImgs.reserve(std::distance(ItBegin, ItEnd));
+  DeviceFilteredImgs.reserve(
+      static_cast<size_t>(std::distance(ItBegin, ItEnd)));
   for (auto It = ItBegin; It != ItEnd; ++It) {
     if (doesImageTargetMatchDevice(*It->second, DeviceImpl))
       DeviceFilteredImgs.push_back(It->second);
@@ -1544,7 +1545,8 @@ const RTDeviceBinaryImage *getBinImageFromMultiMap(
   // Ask the native runtime under the given context to choose the device image
   // it prefers.
   ContextImpl.getAdapter()->call<UrApiKind::urDeviceSelectBinary>(
-      DeviceImpl.getHandleRef(), UrBinaries.data(), UrBinaries.size(), &ImgInd);
+      DeviceImpl.getHandleRef(), UrBinaries.data(),
+      static_cast<uint32_t>(UrBinaries.size()), &ImgInd);
   return DeviceFilteredImgs[ImgInd];
 }
 
@@ -1625,7 +1627,8 @@ const RTDeviceBinaryImage &ProgramManager::getDeviceImage(
   }
 
   ContextImpl.getAdapter()->call<UrApiKind::urDeviceSelectBinary>(
-      DeviceImpl.getHandleRef(), UrBinaries.data(), UrBinaries.size(), &ImgInd);
+      DeviceImpl.getHandleRef(), UrBinaries.data(),
+      static_cast<uint32_t>(UrBinaries.size()), &ImgInd);
 
   ImageIterator = ImageSet.begin();
   std::advance(ImageIterator, ImgInd);
@@ -1772,7 +1775,8 @@ ProgramManager::ProgramPtr ProgramManager::build(
                                      ? CompileOptions
                                      : (CompileOptions + " " + LinkOptions);
     ur_result_t Error = Adapter->call_nocheck<UrApiKind::urProgramBuildExp>(
-        Program.get(), Devices.size(), Devices.data(), Options.c_str());
+        Program.get(), static_cast<uint32_t>(Devices.size()), Devices.data(),
+        Options.c_str());
     if (Error == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
       Error = Adapter->call_nocheck<UrApiKind::urProgramBuild>(
           Context.getHandleRef(), Program.get(), Options.c_str());
@@ -1807,13 +1811,13 @@ ProgramManager::ProgramPtr ProgramManager::build(
   ur_program_handle_t LinkedProg = nullptr;
   auto doLink = [&] {
     auto Res = Adapter->call_nocheck<UrApiKind::urProgramLinkExp>(
-        Context.getHandleRef(), Devices.size(), Devices.data(),
-        LinkPrograms.size(), LinkPrograms.data(), LinkOptions.c_str(),
-        &LinkedProg);
+        Context.getHandleRef(), static_cast<uint32_t>(Devices.size()),
+        Devices.data(), static_cast<uint32_t>(LinkPrograms.size()),
+        LinkPrograms.data(), LinkOptions.c_str(), &LinkedProg);
     if (Res == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
       Res = Adapter->call_nocheck<UrApiKind::urProgramLink>(
-          Context.getHandleRef(), LinkPrograms.size(), LinkPrograms.data(),
-          LinkOptions.c_str(), &LinkedProg);
+          Context.getHandleRef(), static_cast<uint32_t>(LinkPrograms.size()),
+          LinkPrograms.data(), LinkOptions.c_str(), &LinkedProg);
     }
     return Res;
   };
@@ -1857,7 +1861,7 @@ void ProgramManager::cacheKernelImplicitLocalArg(
   if (ImplicitLocalArgRange.isAvailable())
     for (auto Prop : ImplicitLocalArgRange) {
       m_KernelImplicitLocalArgPos[Prop->Name] =
-          DeviceBinaryProperty(Prop).asUint32();
+          static_cast<int>(DeviceBinaryProperty(Prop).asUint32());
     }
 }
 
@@ -2259,7 +2263,7 @@ void ProgramManager::removeImages(sycl_device_binaries DeviceBinary) {
         if (CurIt->second.second == Img) {
           if (auto ContextImpl = CurIt->second.first.lock()) {
             ContextImpl->getKernelProgramCache().removeAllRelatedEntries(
-                Img->getImageID());
+                static_cast<uint32_t>(Img->getImageID()));
           }
           NativePrograms.erase(CurIt);
         }
@@ -3014,8 +3018,8 @@ ProgramManager::link(const std::vector<device_image_plain> &Imgs,
         &LinkedProg);
     if (Res == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
       Res = Adapter->call_nocheck<UrApiKind::urProgramLink>(
-          ContextImpl.getHandleRef(), URPrograms.size(), URPrograms.data(),
-          LinkOptionsStr.c_str(), &LinkedProg);
+          ContextImpl.getHandleRef(), static_cast<uint32_t>(URPrograms.size()),
+          URPrograms.data(), LinkOptionsStr.c_str(), &LinkedProg);
     }
     return Res;
   };
@@ -3440,8 +3444,8 @@ std::optional<sycl::exception> checkDevSupportJointMatrix(
     const std::string &UseStrUser = JointMatrixVec[1];
     size_t RowsUser, ColsUser = 0;
     try {
-      RowsUser = std::stoi(JointMatrixVec[2]);
-      ColsUser = std::stoi(JointMatrixVec[3]);
+      RowsUser = std::stoul(JointMatrixVec[2]);
+      ColsUser = std::stoul(JointMatrixVec[3]);
     } catch (std::logic_error &) {
       // ignore exceptions, one way or another a user will see sycl::exception
       // with the message about incorrect rows or cols, because they are
@@ -3523,9 +3527,9 @@ std::optional<sycl::exception> checkDevSupportJointMatrixMad(
     const std::string &MatrixTypeDStrUser = JointMatrixMadVec[3];
     size_t MSizeUser, KSizeUser, NSizeUser = 0;
     try {
-      MSizeUser = std::stoi(JointMatrixMadVec[4]);
-      KSizeUser = std::stoi(JointMatrixMadVec[5]);
-      NSizeUser = std::stoi(JointMatrixMadVec[6]);
+      MSizeUser = std::stoul(JointMatrixMadVec[4]);
+      KSizeUser = std::stoul(JointMatrixMadVec[5]);
+      NSizeUser = std::stoul(JointMatrixMadVec[6]);
     } catch (std::logic_error &) {
       // ignore exceptions, one way or another a user will see sycl::exception
       // with the message about incorrect size(s), because they are
@@ -3694,7 +3698,7 @@ checkDevSupportDeviceRequirements(const device_impl &Dev,
     ReqdWGSize.dropBytes(8);
     uint64_t ReqdWGSizeAllDimsTotal = 1;
     std::vector<uint64_t> ReqdWGSizeVec;
-    int Dims = 0;
+    size_t Dims = 0;
     while (!ReqdWGSize.empty()) {
       uint64_t SingleDimSize = usingUint64_t ? ReqdWGSize.consume<uint64_t>()
                                              : ReqdWGSize.consume<uint32_t>();
@@ -3718,7 +3722,7 @@ checkDevSupportDeviceRequirements(const device_impl &Dev,
       UserProvidedNumDims =
           DeviceBinaryProperty(*(WorkGroupNumDim.value())).asUint32();
 #ifndef NDEBUG
-      for (unsigned i = UserProvidedNumDims; i < 3; ++i)
+      for (size_t i = UserProvidedNumDims; i < 3; ++i)
         assert(ReqdWGSizeVec[i] == 1 &&
                "Incorrect padding in required work-group size metadata.");
 #endif // NDEBUG
@@ -3753,27 +3757,27 @@ checkDevSupportDeviceRequirements(const device_impl &Dev,
     else // (Dims == 3)
       MaxWorkItemSizesVariant =
           Dev.get_info<info::device::max_work_item_sizes<3>>();
-    for (int i = 0; i < Dims; i++) {
+    for (size_t i = 0; i < Dims; i++) {
       // Extracting value from std::variant to avoid dealing with type-safety
       // issues after that
       if (Dims == 1) {
         // ReqdWGSizeVec is in reverse order compared to MaxWorkItemSizes
         if (ReqdWGSizeVec[i] >
-            std::get<id<1>>(MaxWorkItemSizesVariant)[Dims - i - 1])
+            std::get<id<1>>(MaxWorkItemSizesVariant)[Dims - i - 1u])
           return sycl::exception(sycl::errc::kernel_not_supported,
                                  "Required work-group size " +
                                      std::to_string(ReqdWGSizeVec[i]) +
                                      " is not supported");
       } else if (Dims == 2) {
         if (ReqdWGSizeVec[i] >
-            std::get<id<2>>(MaxWorkItemSizesVariant)[Dims - i - 1])
+            std::get<id<2>>(MaxWorkItemSizesVariant)[Dims - i - 1u])
           return sycl::exception(sycl::errc::kernel_not_supported,
                                  "Required work-group size " +
                                      std::to_string(ReqdWGSizeVec[i]) +
                                      " is not supported");
       } else // (Dims == 3)
         if (ReqdWGSizeVec[i] >
-            std::get<id<3>>(MaxWorkItemSizesVariant)[Dims - i - 1])
+            std::get<id<3>>(MaxWorkItemSizesVariant)[Dims - i - 1u])
           return sycl::exception(sycl::errc::kernel_not_supported,
                                  "Required work-group size " +
                                      std::to_string(ReqdWGSizeVec[i]) +

@@ -127,11 +127,11 @@ std::vector<device> platform::ext_oneapi_get_composite_devices() const {
     // check if they are in the list of available devices returned by
     // `get_devices()`, because we cannot return a Composite device unless all
     // of its components are available too.
-    size_t ComponentsFound = std::count_if(
+    auto ComponentsFound = static_cast<size_t>(std::count_if(
         Components.begin(), Components.end(), [&](const device &d) {
           return std::find(GPUDevices.begin(), GPUDevices.end(), d) !=
                  GPUDevices.end();
-        });
+        }));
     if (ComponentsFound == Components.size())
       Result.push_back(Composite);
   }

@@ -746,7 +746,7 @@ void applyFuncOnFilteredArgs(const KernelArgMask *EliminatedArgMask,
                              std::vector<ArgDesc> &Args, FuncT Func) {
   if (!EliminatedArgMask || EliminatedArgMask->size() == 0) {
     for (ArgDesc &Arg : Args) {
-      Func(Arg, Arg.MIndex);
+      Func(Arg, static_cast<size_t>(Arg.MIndex));
     }
   } else {
     // TODO this is not necessary as long as we can guarantee that the
@@ -762,11 +762,11 @@ void applyFuncOnFilteredArgs(const KernelArgMask *EliminatedArgMask,
       // Handle potential gaps in set arguments (e. g. if some of them are
       // set on the user side).
       for (int Idx = LastIndex + 1; Idx < Arg.MIndex; ++Idx)
-        if (!(*EliminatedArgMask)[Idx])
+        if (!(*EliminatedArgMask)[static_cast<size_t>(Idx)])
           ++NextTrueIndex;
       LastIndex = Arg.MIndex;
 
-      if ((*EliminatedArgMask)[Arg.MIndex])
+      if ((*EliminatedArgMask)[static_cast<size_t>(Arg.MIndex)])
         continue;
 
       Func(Arg, NextTrueIndex);
@@ -782,13 +782,13 @@ void applyFuncOnFilteredArgs(
   if (!EliminatedArgMask || EliminatedArgMask->size() == 0) {
     for (int I = 0; I < KernelNumArgs; ++I) {
       const detail::kernel_param_desc_t &Param = KernelParamDescGetter(I);
-      Func(Param, I);
+      Func(Param, static_cast<size_t>(I));
     }
   } else {
     size_t NextTrueIndex = 0;
     for (int I = 0; I < KernelNumArgs; ++I) {
       const detail::kernel_param_desc_t &Param = KernelParamDescGetter(I);
-      if ((*EliminatedArgMask)[I])
+      if ((*EliminatedArgMask)[static_cast<size_t>(I)])
         continue;
       Func(Param, NextTrueIndex);
       ++NextTrueIndex;

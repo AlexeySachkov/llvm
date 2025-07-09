@@ -152,7 +152,7 @@ public:
           continue;
         // If we pick an unseen node, we set its seen counter to the number of
         // children to prevent the children from re-adding it to the work-list.
-        Seen[I] = Nodes[I].Children.size();
+        Seen[I] = static_cast<uint32_t>(Nodes[I].Children.size());
 
         WorkList.push_back(I);
         // It should not be possible for an unseen node to be dead at this
@@ -175,8 +175,8 @@ public:
   /// \returns the values of all alive nodes in the graph.
   std::vector<T> GetNodeValues() const noexcept {
     std::vector<T> NodeValues;
-    NodeValues.reserve(std::count_if(Nodes.begin(), Nodes.end(),
-                                     [](const Node &N) { return N.Alive; }));
+    NodeValues.reserve(static_cast<size_t>(std::count_if(
+        Nodes.begin(), Nodes.end(), [](const Node &N) { return N.Alive; })));
     for (const Node &N : Nodes)
       if (N.Alive)
         NodeValues.emplace_back(N.Value);
@@ -275,7 +275,8 @@ protected:
     auto UpdateIndex = [BaseOffset, &AdoptiveNodes](size_t &I) {
       auto InAdoptives = AdoptiveNodes.find(I);
       assert(InAdoptives != AdoptiveNodes.end());
-      I = BaseOffset + std::distance(AdoptiveNodes.begin(), InAdoptives);
+      I = BaseOffset + static_cast<size_t>(
+                           std::distance(AdoptiveNodes.begin(), InAdoptives));
     };
 
     for (const auto &N : AdoptiveNodes) {

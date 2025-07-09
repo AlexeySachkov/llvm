@@ -149,10 +149,10 @@ inline void write(GlobalBufAccessorT &GlobalFlushBuf, size_t FlushBufferSize,
 }
 
 inline void reverseBuf(char *Buf, unsigned Len) {
-  int I = Len - 1;
+  int I = static_cast<int>(Len) - 1;
   int J = 0;
   while (I > J) {
-    int Temp = Buf[I];
+    char Temp = Buf[I];
     Buf[I] = Buf[J];
     Buf[J] = Temp;
     I--;
@@ -167,9 +167,9 @@ inline std::make_unsigned_t<T> getAbsVal(const T Val, const int Base) {
 
 inline char digitToChar(const int Digit) {
   if (Digit < 10) {
-    return '0' + Digit;
+    return '0' + static_cast<char>(Digit);
   } else {
-    return 'a' + Digit - 10;
+    return 'a' + static_cast<char>(Digit) - 10;
   }
 }
 
@@ -381,13 +381,13 @@ EnableIfFP<T, unsigned> floatingPointToDecStr(T AbsVal, char *Digits,
   }
 
   auto IntegralPart = static_cast<int>(AbsVal);
-  auto FractionPart = AbsVal - IntegralPart;
+  auto FractionPart = AbsVal - static_cast<float>(IntegralPart);
 
   int FractionDigits[MAX_FLOATING_POINT_DIGITS] = {0};
 
   // Exponent
   int P = Precision > 0 ? Precision : 4;
-  size_t FractionLength = Exp + P;
+  size_t FractionLength = static_cast<size_t>(Exp + P);
 
   // After normalization integral part contains 1 symbol, also there could be
   // '.', 'e', sign of the exponent and sign of the number, overall 5 symbols.
@@ -399,13 +399,13 @@ EnableIfFP<T, unsigned> floatingPointToDecStr(T AbsVal, char *Digits,
   for (unsigned I = 0; I < FractionLength; ++I) {
     FractionPart *= T{10.0};
     FractionDigits[I] = static_cast<int>(FractionPart);
-    FractionPart -= static_cast<int>(FractionPart);
+    FractionPart -= static_cast<float>(static_cast<int>(FractionPart));
   }
 
   int Carry = FractionPart > static_cast<T>(0.5) ? 1 : 0;
 
   // Propagate the Carry
-  for (int I = FractionLength - 1; I >= 0 && Carry; --I) {
+  for (size_t I = FractionLength - 1; I >= 0 && Carry; --I) {
     auto Digit = FractionDigits[I] + Carry;
     FractionDigits[I] = Digit % 10;
     Carry = Digit / 10;
@@ -518,8 +518,8 @@ writeIntegral(GlobalBufAccessorT &GlobalFlushBuf, size_t FlushBufferSize,
 template <typename T>
 inline EnableIfFP<T>
 writeFloatingPoint(GlobalBufAccessorT &GlobalFlushBuf, size_t FlushBufferSize,
-                   unsigned WIOffset, unsigned Flags, int Width, int Precision,
-                   const T &Val) {
+                   unsigned WIOffset, unsigned Flags, int Width,
+                   int Precision, const T &Val) {
   char Digits[MAX_FLOATING_POINT_DIGITS] = {0};
   unsigned Len = ScalarToStr(Val, Digits, Flags, Width, Precision);
   write(GlobalFlushBuf, FlushBufferSize, WIOffset, Digits, Len,
@@ -885,9 +885,9 @@ public:
   size_t get_max_statement_size() const;
 #endif
 
-  size_t get_precision() const { return Precision; }
+  size_t get_precision() const { return static_cast<size_t>(Precision); }
 
-  size_t get_width() const { return Width; }
+  size_t get_width() const { return static_cast<size_t>(Width); }
 
   stream_manipulator get_stream_mode() const { return Manipulator; }
 
@@ -1146,21 +1146,21 @@ operator<<(const stream &Out, const ValueType &RHS) {
 inline const stream &operator<<(const stream &Out, const float &RHS) {
   detail::writeFloatingPoint<float>(Out.GlobalFlushBuf, Out.FlushBufferSize,
                                     Out.WIOffset, Out.get_flags(),
-                                    Out.get_width(), Out.get_precision(), RHS);
+                                    Out.Width, Out.Precision, RHS);
   return Out;
 }
 
 inline const stream &operator<<(const stream &Out, const double &RHS) {
   detail::writeFloatingPoint<double>(Out.GlobalFlushBuf, Out.FlushBufferSize,
                                      Out.WIOffset, Out.get_flags(),
-                                     Out.get_width(), Out.get_precision(), RHS);
+                                     Out.Width, Out.Precision, RHS);
   return Out;
 }
 
 inline const stream &operator<<(const stream &Out, const half &RHS) {
   detail::writeFloatingPoint<half>(Out.GlobalFlushBuf, Out.FlushBufferSize,
                                    Out.WIOffset, Out.get_flags(),
-                                   Out.get_width(), Out.get_precision(), RHS);
+                                   Out.Width, Out.Precision, RHS);
   return Out;
 }
 
@@ -1168,7 +1168,7 @@ inline const stream &operator<<(const stream &Out,
                                 const ext::oneapi::bfloat16 &RHS) {
   detail::writeFloatingPoint<ext::oneapi::bfloat16>(
       Out.GlobalFlushBuf, Out.FlushBufferSize, Out.WIOffset, Out.get_flags(),
-      Out.get_width(), Out.get_precision(), RHS);
+      Out.Width, Out.Precision, RHS);
   return Out;
 }
 

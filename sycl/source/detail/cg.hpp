@@ -80,14 +80,14 @@ public:
   NDRDescT(sycl::range<Dims_> N, bool SetNumWorkGroups) : Dims{size_t(Dims_)} {
     if (SetNumWorkGroups) {
       for (size_t I = 0; I < Dims_; ++I) {
-        NumWorkGroups[I] = N[I];
+        NumWorkGroups[I] = N[static_cast<int>(I)];
       }
     } else {
       for (size_t I = 0; I < Dims_; ++I) {
-        GlobalSize[I] = N[I];
+        GlobalSize[I] = N[static_cast<int>(I)];
       }
 
-      for (int I = Dims_; I < 3; ++I) {
+      for (size_t I = Dims; I < 3; ++I) {
         GlobalSize[I] = 1;
       }
     }
@@ -97,17 +97,18 @@ public:
   NDRDescT(sycl::range<Dims_> NumWorkItems, sycl::range<Dims_> LocalSizes,
            sycl::id<Dims_> Offset)
       : Dims{size_t(Dims_)} {
-    for (size_t I = 0; I < Dims_; ++I) {
-      GlobalSize[I] = NumWorkItems[I];
-      LocalSize[I] = LocalSizes[I];
-      GlobalOffset[I] = Offset[I];
+    for (size_t UI = 0; UI < Dims_; ++UI) {
+      auto I = static_cast<int>(UI);
+      GlobalSize[UI] = NumWorkItems[I];
+      LocalSize[UI] = LocalSizes[I];
+      GlobalOffset[UI] = Offset[I];
     }
 
-    for (int I = Dims_; I < 3; ++I) {
+    for (size_t I = Dims_; I < 3; ++I) {
       LocalSize[I] = LocalSizes[0] ? 1 : 0;
     }
 
-    for (int I = Dims_; I < 3; ++I) {
+    for (size_t I = Dims; I < 3; ++I) {
       GlobalSize[I] = 1;
     }
   }
@@ -116,8 +117,8 @@ public:
   NDRDescT(sycl::range<Dims_> NumWorkItems, sycl::id<Dims_> Offset)
       : Dims{size_t(Dims_)} {
     for (size_t I = 0; I < Dims_; ++I) {
-      GlobalSize[I] = NumWorkItems[I];
-      GlobalOffset[I] = Offset[I];
+      GlobalSize[I] = NumWorkItems[static_cast<int>(I)];
+      GlobalOffset[I] = Offset[static_cast<int>(I)];
     }
   }
 
@@ -138,7 +139,7 @@ public:
     }
 
     for (int I = 0; I < Dims_; ++I)
-      ClusterDimensions[I] = N[I];
+      ClusterDimensions[static_cast<size_t>(I)] = N[I];
   }
 
   NDRDescT &operator=(const NDRDescT &Desc) = default;
@@ -240,7 +241,7 @@ public:
   // Storage for function name and source file name
   std::string MFunctionName, MFileName;
   // Storage for line and column of code location
-  int32_t MLine, MColumn;
+  unsigned long MLine, MColumn;
   bool MIsTopCodeLoc;
 };
 

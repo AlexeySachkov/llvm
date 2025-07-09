@@ -351,7 +351,7 @@ template <typename Self> struct VecOperators {
 #endif
 #endif
     result_t<OpTy> res{};
-    for (size_t i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       if constexpr (is_logical<OpTy>)
         res[i] = Op(Args[i]...) ? -1 : 0;
       else

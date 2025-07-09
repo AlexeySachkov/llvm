@@ -250,7 +250,7 @@ void exec_graph_impl::makePartitions() {
   }
 
   // Create partitions
-  int PartitionFinalNum = 0;
+  size_t PartitionFinalNum = 0;
   for (int i = -1; i <= CurrentPartition; i++) {
     const std::shared_ptr<partition> &Partition = std::make_shared<partition>();
     for (auto &Node : MNodeStorage) {
@@ -718,7 +718,7 @@ void graph_impl::beginRecording(sycl::detail::queue_impl &Queue) {
 // predecessors until we find the real dependency.
 void exec_graph_impl::findRealDeps(
     std::vector<ur_exp_command_buffer_sync_point_t> &Deps,
-    node_impl &CurrentNode, int ReferencePartitionNum) {
+    node_impl &CurrentNode, size_t ReferencePartitionNum) {
   if (!CurrentNode.requiresEnqueue()) {
     for (node_impl &NodeImpl : CurrentNode.predecessors()) {
       findRealDeps(Deps, NodeImpl, ReferencePartitionNum);
@@ -754,7 +754,7 @@ exec_graph_impl::enqueueNodeDirect(const sycl::context &Ctx,
 
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   const bool xptiEnabled = xptiTraceEnabled();
-  int32_t StreamID = xpti::invalid_id<>;
+  auto StreamID = xpti::invalid_id<>;
   xpti_td *CmdTraceEvent = nullptr;
   uint64_t InstanceID = 0;
   if (xptiEnabled) {
@@ -765,9 +765,10 @@ exec_graph_impl::enqueueNodeDirect(const sycl::context &Ctx,
                                         CGExec->MFunctionName.c_str(),
                                         CGExec->MLine, CGExec->MColumn);
     std::tie(CmdTraceEvent, InstanceID) = emitKernelInstrumentationData(
-        StreamID, CGExec->MSyclKernel, CodeLoc, CGExec->MIsTopCodeLoc,
-        CGExec->MKernelName.data(), CGExec->MKernelNameBasedCachePtr, nullptr,
-        CGExec->MNDRDesc, CGExec->MKernelBundle.get(), CGExec->MArgs);
+        static_cast<int32_t>(StreamID), CGExec->MSyclKernel, CodeLoc,
+        CGExec->MIsTopCodeLoc, CGExec->MKernelName.data(),
+        CGExec->MKernelNameBasedCachePtr, nullptr, CGExec->MNDRDesc,
+        CGExec->MKernelBundle.get(), CGExec->MArgs);
     if (CmdTraceEvent)
       sycl::detail::emitInstrumentationGeneral(
           StreamID, InstanceID, CmdTraceEvent, xpti::trace_task_begin, nullptr);
@@ -1045,7 +1046,8 @@ EventImplPtr exec_graph_impl::enqueuePartitionDirectly(
   }
 
   auto CommandBuffer = Partition->MCommandBuffers[Queue.get_device()];
-  const size_t UrEnqueueWaitListSize = UrEventHandles.size();
+  const auto UrEnqueueWaitListSize =
+      static_cast<uint32_t>(UrEventHandles.size());
   const ur_event_handle_t *UrEnqueueWaitList =
       UrEnqueueWaitListSize == 0 ? nullptr : UrEventHandles.data();
 
@@ -1061,8 +1063,9 @@ EventImplPtr exec_graph_impl::enqueuePartitionDirectly(
     NewEvent->setSubmissionTime();
     ur_event_handle_t UrEvent = nullptr;
     Queue.getAdapter().call<sycl::detail::UrApiKind::urEnqueueCommandBufferExp>(
-        Queue.getHandleRef(), CommandBuffer, UrEventHandles.size(),
-        UrEnqueueWaitList, &UrEvent);
+        Queue.getHandleRef(), CommandBuffer,
+        static_cast<uint32_t>(UrEventHandles.size()), UrEnqueueWaitList,
+        &UrEvent);
     NewEvent->setHandle(UrEvent);
     NewEvent->setEventFromSubmittedExecCommandBuffer(true);
     return NewEvent;
@@ -1617,7 +1620,7 @@ void exec_graph_impl::populateURKernelUpdateStructs(
 
   sycl::detail::applyFuncOnFilteredArgs(
       EliminatedArgMask, NodeArgs,
-      [&MaskedArgs](sycl::detail::ArgDesc &Arg, int NextTrueIndex) {
+      [&MaskedArgs](sycl::detail::ArgDesc &Arg, size_t NextTrueIndex) {
         MaskedArgs.emplace_back(Arg.MType, Arg.MPtr, Arg.MSize, NextTrueIndex);
       });
 
@@ -1705,11 +1708,11 @@ void exec_graph_impl::populateURKernelUpdateStructs(
   }
 
   UpdateDesc.hNewKernel = UrKernel;
-  UpdateDesc.numNewMemObjArgs = MemobjDescs.size();
+  UpdateDesc.numNewMemObjArgs = static_cast<uint32_t>(MemobjDescs.size());
   UpdateDesc.pNewMemObjArgList = MemobjDescs.data();
-  UpdateDesc.numNewPointerArgs = PtrDescs.size();
+  UpdateDesc.numNewPointerArgs = static_cast<uint32_t>(PtrDescs.size());
   UpdateDesc.pNewPointerArgList = PtrDescs.data();
-  UpdateDesc.numNewValueArgs = ValueDescs.size();
+  UpdateDesc.numNewValueArgs = static_cast<uint32_t>(ValueDescs.size());
   UpdateDesc.pNewValueArgList = ValueDescs.data();
 
   UpdateDesc.pNewGlobalWorkOffset = &NDRDesc.GlobalOffset[0];
@@ -1734,13 +1737,13 @@ void exec_graph_impl::populateURKernelUpdateStructs(
   ExecNode->second->updateFromOtherNode(Node);
 }
 
-std::map<int, std::vector<std::shared_ptr<node_impl>>>
+std::map<size_t, std::vector<std::shared_ptr<node_impl>>>
 exec_graph_impl::getURUpdatableNodes(
     const std::vector<std::shared_ptr<node_impl>> &Nodes) const {
   // Iterate over the list of nodes, and for every node that can
   // be updated through UR, add it to the list of nodes for
   // that can be updated for the UR command-buffer partition.
-  std::map<int, std::vector<std::shared_ptr<node_impl>>> PartitionedNodes;
+  std::map<size_t, std::vector<std::shared_ptr<node_impl>>> PartitionedNodes;
 
   // Initialize vector for each partition
   for (size_t i = 0; i < MPartitions.size(); i++) {
@@ -1827,7 +1830,8 @@ void exec_graph_impl::updateURImpl(
   context_impl &ContextImpl = *sycl::detail::getSyclObjImpl(MContext);
   const sycl::detail::AdapterPtr &Adapter = ContextImpl.getAdapter();
   Adapter->call<sycl::detail::UrApiKind::urCommandBufferUpdateKernelLaunchExp>(
-      CommandBuffer, UpdateDescList.size(), UpdateDescList.data());
+      CommandBuffer, static_cast<uint32_t>(UpdateDescList.size()),
+      UpdateDescList.data());
 }
 
 modifiable_command_graph::modifiable_command_graph(

@@ -118,7 +118,9 @@ public:
     };
     ConstIterator begin() const { return ConstIterator(Begin); }
     ConstIterator end() const { return ConstIterator(End); }
-    size_t size() const { return std::distance(begin(), end()); }
+    size_t size() const {
+      return static_cast<size_t>(std::distance(begin(), end()));
+    }
     bool empty() const { return begin() == end(); }
     friend class RTDeviceBinaryImage;
     friend class DynRTDeviceBinaryImage;

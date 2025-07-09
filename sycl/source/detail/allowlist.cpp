@@ -391,7 +391,7 @@ void applyAllowList(std::vector<ur_device_handle_t> &UrDevices,
   DeviceDesc.emplace(PlatformNameKeyName,
                      PlatformImpl.get_info<info::platform::name>());
 
-  int InsertIDx = 0;
+  size_t InsertIDx = 0;
   for (ur_device_handle_t Device : UrDevices) {
     device_impl &DeviceImpl = PlatformImpl.getOrMakeDeviceImpl(Device);
     // get DeviceType value and put it to DeviceDesc

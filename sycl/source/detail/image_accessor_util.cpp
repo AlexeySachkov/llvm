@@ -159,8 +159,8 @@ bool isOutOfRange(const int4 PixelCoord, const addressing_mode SmplAddrMode,
       SmplAddrMode != addressing_mode::none)
     return false;
 
-  auto CheckOutOfRange = [](cl_int Coord, cl_int Range) {
-    return ((Coord < 0) || (Coord >= Range));
+  auto CheckOutOfRange = [](cl_int Coord, size_t Range) {
+    return ((Coord < 0) || (Coord >= static_cast<cl_int>(Range)));
   };
 
   bool CheckWidth = CheckOutOfRange(PixelCoord.x(), ImgRange[0]);

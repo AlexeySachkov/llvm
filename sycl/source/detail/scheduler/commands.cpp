@@ -93,10 +93,12 @@ static bool CurrentCodeLocationValid() {
 void emitInstrumentationGeneral(uint32_t StreamID, uint64_t InstanceID,
                                 xpti_td *TraceEvent, uint16_t Type,
                                 const void *Addr) {
-  if (!(xptiCheckTraceEnabled(StreamID, Type) && TraceEvent))
+  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID), Type) &&
+        TraceEvent))
     return;
   // Trace event notifier that emits a Type event
-  xptiNotifySubscribers(StreamID, Type, detail::GSYCLGraphEvent,
+  xptiNotifySubscribers(static_cast<uint8_t>(StreamID), Type,
+                        detail::GSYCLGraphEvent,
                         static_cast<xpti_td *>(TraceEvent), InstanceID, Addr);
 }
 
@@ -451,7 +453,7 @@ public:
           // devices in the same context for CUDA and HIP backends
           Queue->getAdapter().call<UrApiKind::urEnqueueNativeCommandExp>(
               HostTask.MQueue->getHandleRef(), InteropFreeFunc, &CustomOpData,
-              MReqUrMem.size(), MReqUrMem.data(), nullptr, 0, nullptr, nullptr);
+              MReqUrMem.size(), MReqUrMem.data(), nullptr, 0u, nullptr, nullptr);
         } else {
           HostTask.MHostTask->call(MThisCmd->MEvent->getHostProfilingInfo(),
                                    IH);
@@ -609,7 +611,8 @@ void Command::emitEdgeEventForCommandDependence(
   // Bail early if either the source or the target node for the given
   // dependency is undefined or NULL
   constexpr uint16_t NotificationTraceType = xpti::trace_edge_create;
-  if (!(xptiCheckTraceEnabled(MStreamID, NotificationTraceType) &&
+  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID),
+                              NotificationTraceType) &&
         MTraceEvent && Cmd && Cmd->MTraceEvent))
     return;
 
@@ -639,9 +642,9 @@ void Command::emitEdgeEventForCommandDependence(
     } else {
       xpti::addMetadata(EdgeEvent, "event", reinterpret_cast<size_t>(ObjAddr));
     }
-    xptiNotifySubscribers(MStreamID, NotificationTraceType,
-                          detail::GSYCLGraphEvent, EdgeEvent, EdgeInstanceNo,
-                          nullptr);
+    xptiNotifySubscribers(static_cast<uint8_t>(MStreamID),
+                          NotificationTraceType, detail::GSYCLGraphEvent,
+                          EdgeEvent, EdgeInstanceNo, nullptr);
   }
   // General comment - None of these are serious errors as the instrumentation
   // layer MUST be tolerant of errors. If we need to let the end user know, we
@@ -658,7 +661,7 @@ void Command::emitEdgeEventForEventDependence(Command *Cmd,
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   // If we have failed to create an event to represent the Command, then we
   // cannot emit an edge event. Bail early!
-  if (!(xptiCheckTraceEnabled(MStreamID) && MTraceEvent))
+  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)) && MTraceEvent))
     return;
 
   if (Cmd && Cmd->MTraceEvent) {
@@ -684,9 +687,9 @@ void Command::emitEdgeEventForEventDependence(Command *Cmd,
                       xpti_at::active, &VNodeInstanceNo);
     // Emit the virtual node first
     xpti::addMetadata(NodeEvent, "kernel_name", NodeName);
-    xptiNotifySubscribers(MStreamID, xpti::trace_node_create,
-                          detail::GSYCLGraphEvent, NodeEvent, VNodeInstanceNo,
-                          nullptr);
+    xptiNotifySubscribers(static_cast<uint8_t>(MStreamID),
+                          xpti::trace_node_create, detail::GSYCLGraphEvent,
+                          NodeEvent, VNodeInstanceNo, nullptr);
     // Create a new event for the edge
     std::string EdgeName = SH.nameWithAddressString("Event", AddressStr);
     xpti::payload_t EdgePayload(EdgeName.c_str(), MAddress);
@@ -702,9 +705,9 @@ void Command::emitEdgeEventForEventDependence(Command *Cmd,
       EdgeEvent->target_id = TgtEvent->unique_id;
       xpti::addMetadata(EdgeEvent, "event",
                         reinterpret_cast<size_t>(UrEventAddr));
-      xptiNotifySubscribers(MStreamID, xpti::trace_edge_create,
-                            detail::GSYCLGraphEvent, EdgeEvent, EdgeInstanceNo,
-                            nullptr);
+      xptiNotifySubscribers(static_cast<uint8_t>(MStreamID),
+                            xpti::trace_edge_create, detail::GSYCLGraphEvent,
+                            EdgeEvent, EdgeInstanceNo, nullptr);
     }
     return;
   }
@@ -714,7 +717,7 @@ void Command::emitEdgeEventForEventDependence(Command *Cmd,
 uint64_t Command::makeTraceEventProlog(void *MAddress) {
   uint64_t CommandInstanceNo = 0;
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return CommandInstanceNo;
 
   MTraceEventPrologComplete = true;
@@ -747,10 +750,12 @@ uint64_t Command::makeTraceEventProlog(void *MAddress) {
 void Command::makeTraceEventEpilog() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   constexpr uint16_t NotificationTraceType = xpti::trace_node_create;
-  if (!(xptiCheckTraceEnabled(MStreamID, NotificationTraceType) && MTraceEvent))
+  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID),
+                              NotificationTraceType) &&
+        MTraceEvent))
     return;
   assert(MTraceEventPrologComplete);
-  xptiNotifySubscribers(MStreamID, NotificationTraceType,
+  xptiNotifySubscribers(static_cast<uint8_t>(MStreamID), NotificationTraceType,
                         detail::GSYCLGraphEvent,
                         static_cast<xpti_td *>(MTraceEvent), MInstanceID,
                         static_cast<const void *>(MCommandNodeType.c_str()));
@@ -847,16 +852,18 @@ Command *Command::addDep(EventImplPtr Event,
 
 void Command::emitEnqueuedEventSignal(const ur_event_handle_t UrEventAddr) {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  emitInstrumentationGeneral(
-      MStreamID, MInstanceID, static_cast<xpti_td *>(MTraceEvent),
-      xpti::trace_signal, static_cast<const void *>(UrEventAddr));
+  emitInstrumentationGeneral(static_cast<uint32_t>(MStreamID), MInstanceID,
+                             static_cast<xpti_td *>(MTraceEvent),
+                             xpti::trace_signal,
+                             static_cast<const void *>(UrEventAddr));
 #endif
   std::ignore = UrEventAddr;
 }
 
 void Command::emitInstrumentation(uint16_t Type, const char *Txt) {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  return emitInstrumentationGeneral(MStreamID, MInstanceID,
+  return emitInstrumentationGeneral(static_cast<uint32_t>(MStreamID),
+                                    MInstanceID,
                                     static_cast<xpti_td *>(MTraceEvent), Type,
                                     static_cast<const void *>(Txt));
 #else
@@ -990,9 +997,9 @@ void Command::resolveReleaseDependencies(std::set<Command *> &DepList) {
         EdgeEvent->source_id = SrcTraceEvent->unique_id;
         xpti::addMetadata(EdgeEvent, "memory_object",
                           reinterpret_cast<size_t>(MAddress));
-        xptiNotifySubscribers(MStreamID, xpti::trace_edge_create,
-                              detail::GSYCLGraphEvent, EdgeEvent,
-                              EdgeInstanceNo, nullptr);
+        xptiNotifySubscribers(static_cast<uint8_t>(MStreamID),
+                              xpti::trace_edge_create, detail::GSYCLGraphEvent,
+                              EdgeEvent, EdgeInstanceNo, nullptr);
       }
     }
   }
@@ -1022,9 +1029,9 @@ void Command::copySubmissionCodeLocation() {
   if (TData.functionName())
     MSubmissionFunctionName = TData.functionName();
   if (MSubmissionFileName.size() || MSubmissionFunctionName.size())
-    MSubmissionCodeLocation = {
-        MSubmissionFileName.c_str(), MSubmissionFunctionName.c_str(),
-        (int)TData.lineNumber(), (int)TData.columnNumber()};
+    MSubmissionCodeLocation = {MSubmissionFileName.c_str(),
+                               MSubmissionFunctionName.c_str(),
+                               TData.lineNumber(), TData.columnNumber()};
 #endif
 }
 
@@ -1041,7 +1048,7 @@ AllocaCommandBase::AllocaCommandBase(CommandType Type, queue_impl *Queue,
 
 void AllocaCommandBase::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1091,7 +1098,7 @@ AllocaCommand::AllocaCommand(queue_impl *Queue, Requirement Req,
 
 void AllocaCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
 
   makeTraceEventEpilog();
@@ -1168,7 +1175,7 @@ AllocaSubBufCommand::AllocaSubBufCommand(queue_impl *Queue, Requirement Req,
 
 void AllocaSubBufCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
 
   xpti_td *TE = static_cast<xpti_td *>(MTraceEvent);
@@ -1241,7 +1248,7 @@ ReleaseCommand::ReleaseCommand(queue_impl *Queue, AllocaCommandBase *AllocaCmd)
 
 void ReleaseCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1368,7 +1375,7 @@ MapMemObject::MapMemObject(AllocaCommandBase *SrcAllocaCmd, Requirement Req,
 
 void MapMemObject::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1430,7 +1437,7 @@ UnMapMemObject::UnMapMemObject(AllocaCommandBase *DstAllocaCmd, Requirement Req,
 
 void UnMapMemObject::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1525,7 +1532,7 @@ MemCpyCommand::MemCpyCommand(Requirement SrcReq,
 
 void MemCpyCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1698,7 +1705,7 @@ MemCpyCommandHost::MemCpyCommandHost(Requirement SrcReq,
 
 void MemCpyCommandHost::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1789,7 +1796,7 @@ void EmptyCommand::addRequirement(Command *DepCmd, AllocaCommandBase *AllocaCmd,
 
 void EmptyCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1860,7 +1867,7 @@ UpdateHostRequirementCommand::UpdateHostRequirementCommand(
 
 void UpdateHostRequirementCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -2058,9 +2065,9 @@ void instrumentationFillCommonData(const std::string &KernelName,
   xpti::payload_t Payload;
   if (!FileName.empty()) {
     // File name has a valid string
-    Payload =
-        xpti::payload_t(FuncName.empty() ? KernelName.data() : FuncName.data(),
-                        FileName.data(), Line, Column, Address);
+    Payload = xpti::payload_t(
+        FuncName.empty() ? KernelName.data() : FuncName.data(), FileName.data(),
+        static_cast<int>(Line), static_cast<int>(Column), Address);
     HasSourceInfo = true;
   } else if (Address) {
     // We have a valid function name and an address
@@ -2110,9 +2117,10 @@ std::pair<xpti_td *, uint64_t> emitKernelInstrumentationData(
     const NDRDescT &NDRDesc, detail::kernel_bundle_impl *KernelBundleImplPtr,
     std::vector<ArgDesc> &CGArgs) {
 
-  auto XptiObjects = std::make_pair<xpti_td *, uint64_t>(nullptr, -1);
+  auto XptiObjects = std::make_pair<xpti_td *, uint64_t>(
+      nullptr, std::numeric_limits<uint64_t>::max());
   constexpr uint16_t NotificationTraceType = xpti::trace_node_create;
-  if (!xptiCheckTraceEnabled(StreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID)))
     return XptiObjects;
 
   void *Address = nullptr;
@@ -2149,8 +2157,8 @@ std::pair<xpti_td *, uint64_t> emitKernelInstrumentationData(
         CGArgs);
 
     xptiNotifySubscribers(
-        StreamID, NotificationTraceType, detail::GSYCLGraphEvent, CmdTraceEvent,
-        InstanceID,
+        static_cast<uint8_t>(StreamID), NotificationTraceType,
+        detail::GSYCLGraphEvent, CmdTraceEvent, InstanceID,
         static_cast<const void *>(
             commandToNodeType(Command::CommandType::RUN_CG).c_str()));
   }
@@ -2206,8 +2214,8 @@ void ExecCGCommand::emitInstrumentationData() {
     }
 
     xptiNotifySubscribers(
-        MStreamID, NotificationTraceType, detail::GSYCLGraphEvent,
-        CmdTraceEvent, MInstanceID,
+        static_cast<uint8_t>(MStreamID), NotificationTraceType,
+        detail::GSYCLGraphEvent, CmdTraceEvent, MInstanceID,
         static_cast<const void *>(commandToNodeType(MType).c_str()));
   }
 #endif
@@ -2278,8 +2286,8 @@ static void adjustNDRangePerKernel(NDRDescT &NDR, ur_kernel_handle_t Kernel,
   }
 
   for (size_t I = 0; I < NDR.Dims; ++I) {
-    NDR.GlobalSize[I] = WGSize[I] * NDR.NumWorkGroups[I];
-    NDR.LocalSize[I] = WGSize[I];
+    NDR.GlobalSize[I] = WGSize[static_cast<int>(I)] * NDR.NumWorkGroups[I];
+    NDR.LocalSize[I] = WGSize[static_cast<int>(I)];
   }
 }
 
@@ -2342,8 +2350,8 @@ static void SetArgBasedOnType(
     ur_kernel_arg_mem_obj_properties_t MemObjData{};
     MemObjData.stype = UR_STRUCTURE_TYPE_KERNEL_ARG_MEM_OBJ_PROPERTIES;
     MemObjData.memoryAccess = AccessModeToUr(Req->MAccessMode);
-    Adapter.call<UrApiKind::urKernelSetArgMemObj>(Kernel, NextTrueIndex,
-                                                  &MemObjData, MemArg);
+    Adapter.call<UrApiKind::urKernelSetArgMemObj>(
+        Kernel, static_cast<uint32_t>(NextTrueIndex), &MemObjData, MemArg);
     break;
   }
   case kernel_param_kind_t::kind_std_layout: {
@@ -2351,8 +2359,8 @@ static void SetArgBasedOnType(
       Adapter.call<UrApiKind::urKernelSetArgValue>(
           Kernel, NextTrueIndex, Arg.MSize, nullptr, Arg.MPtr);
     } else {
-      Adapter.call<UrApiKind::urKernelSetArgLocal>(Kernel, NextTrueIndex,
-                                                   Arg.MSize, nullptr);
+      Adapter.call<UrApiKind::urKernelSetArgLocal>(
+          Kernel, static_cast<uint32_t>(NextTrueIndex), Arg.MSize, nullptr);
     }
 
     break;
@@ -2362,16 +2370,16 @@ static void SetArgBasedOnType(
     ur_sampler_handle_t Sampler =
         (ur_sampler_handle_t)detail::getSyclObjImpl(*SamplerPtr)
             ->getOrCreateSampler(ContextImpl);
-    Adapter.call<UrApiKind::urKernelSetArgSampler>(Kernel, NextTrueIndex,
-                                                   nullptr, Sampler);
+    Adapter.call<UrApiKind::urKernelSetArgSampler>(
+        Kernel, static_cast<uint32_t>(NextTrueIndex), nullptr, Sampler);
     break;
   }
   case kernel_param_kind_t::kind_pointer: {
     // We need to de-rerence this to get the actual USM allocation - that's the
     // pointer UR is expecting.
     const void *Ptr = *static_cast<const void *const *>(Arg.MPtr);
-    Adapter.call<UrApiKind::urKernelSetArgPointer>(Kernel, NextTrueIndex,
-                                                   nullptr, Ptr);
+    Adapter.call<UrApiKind::urKernelSetArgPointer>(
+        Kernel, static_cast<uint32_t>(NextTrueIndex), nullptr, Ptr);
     break;
   }
   case kernel_param_kind_t::kind_specialization_constants_buffer: {
@@ -2427,14 +2435,15 @@ static ur_result_t SetKernelParamsAndLaunch(
       switch (ParamDesc.kind) {
       case kernel_param_kind_t::kind_std_layout: {
         int Size = ParamDesc.info;
-        Adapter.call<UrApiKind::urKernelSetArgValue>(Kernel, NextTrueIndex,
-                                                     Size, nullptr, ArgPtr);
+        Adapter.call<UrApiKind::urKernelSetArgValue>(
+            Kernel, static_cast<uint32_t>(NextTrueIndex), Size, nullptr,
+            ArgPtr);
         break;
       }
       case kernel_param_kind_t::kind_pointer: {
         const void *Ptr = *static_cast<const void *const *>(ArgPtr);
-        Adapter.call<UrApiKind::urKernelSetArgPointer>(Kernel, NextTrueIndex,
-                                                       nullptr, Ptr);
+        Adapter.call<UrApiKind::urKernelSetArgPointer>(
+            Kernel, static_cast<uint32_t>(NextTrueIndex), nullptr, Ptr);
         break;
       }
       default:
@@ -2499,11 +2508,11 @@ static ur_result_t SetKernelParamsAndLaunch(
   if (KernelUsesClusterLaunch) {
     ur_kernel_launch_property_value_t launch_property_value_cluster_range;
     launch_property_value_cluster_range.clusterDim[0] =
-        NDRDesc.ClusterDimensions[0];
+        static_cast<uint32_t>(NDRDesc.ClusterDimensions[0]);
     launch_property_value_cluster_range.clusterDim[1] =
-        NDRDesc.ClusterDimensions[1];
+        static_cast<uint32_t>(NDRDesc.ClusterDimensions[1]);
     launch_property_value_cluster_range.clusterDim[2] =
-        NDRDesc.ClusterDimensions[2];
+        static_cast<uint32_t>(NDRDesc.ClusterDimensions[2]);
 
     property_list.push_back({UR_KERNEL_LAUNCH_PROPERTY_ID_CLUSTER_DIMENSION,
                              launch_property_value_cluster_range});
@@ -2659,8 +2668,8 @@ ur_result_t enqueueImpCommandBufferKernel(
           CommandBuffer, UrKernel, NDRDesc.Dims, &NDRDesc.GlobalOffset[0],
           &NDRDesc.GlobalSize[0], LocalSize, AltUrKernels.size(),
           AltUrKernels.size() ? AltUrKernels.data() : nullptr,
-          SyncPoints.size(), SyncPoints.size() ? SyncPoints.data() : nullptr, 0,
-          nullptr, OutSyncPoint, nullptr,
+          SyncPoints.size(), SyncPoints.size() ? SyncPoints.data() : nullptr,
+          0u, nullptr, OutSyncPoint, nullptr,
           CommandBufferDesc.isUpdatable ? OutCommand : nullptr);
 
   if (Res != UR_RESULT_SUCCESS) {
@@ -3529,7 +3538,7 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
     }
     if (auto Result =
             Adapter.call_nocheck<UrApiKind::urEnqueueEventsWaitWithBarrierExt>(
-                MQueue->getHandleRef(), &Properties, 0, nullptr, Event);
+                MQueue->getHandleRef(), &Properties, 0u, nullptr, Event);
         Result != UR_RESULT_SUCCESS)
       return Result;
 
@@ -3596,7 +3605,7 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
       //        See https://github.com/oneapi-src/unified-runtime/issues/2347.
       Adapter.call<UrApiKind::urEnqueueEventsWaitWithBarrier>(
           MQueue->getHandleRef(),
-          /*num_events_in_wait_list=*/0,
+          /*num_events_in_wait_list=*/0u,
           /*event_wait_list=*/nullptr, &PreTimestampMarkerEvent);
       TimestampDeps = &PreTimestampMarkerEvent;
       NumTimestampDeps = 1;
@@ -3618,7 +3627,7 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
       ur_event_handle_t PostTimestampBarrierEvent{};
       Adapter.call<UrApiKind::urEnqueueEventsWaitWithBarrier>(
           MQueue->getHandleRef(),
-          /*num_events_in_wait_list=*/0,
+          /*num_events_in_wait_list=*/0u,
           /*event_wait_list=*/nullptr, &PostTimestampBarrierEvent);
       Adapter.call<UrApiKind::urEventRelease>(PostTimestampBarrierEvent);
     }
@@ -3711,7 +3720,7 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
     return Adapter
         .call_nocheck<UrApiKind::urBindlessImagesWaitExternalSemaphoreExp>(
             MQueue->getHandleRef(), SemWait->getExternalSemaphore(),
-            OptWaitValue.has_value(), WaitValue, 0, nullptr, nullptr);
+            OptWaitValue.has_value(), WaitValue, 0u, nullptr, nullptr);
   }
   case CGType::SemaphoreSignal: {
     assert(MQueue &&
@@ -3724,7 +3733,7 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
     return Adapter
         .call_nocheck<UrApiKind::urBindlessImagesSignalExternalSemaphoreExp>(
             MQueue->getHandleRef(), SemSignal->getExternalSemaphore(),
-            OptSignalValue.has_value(), SignalValue, 0, nullptr, nullptr);
+            OptSignalValue.has_value(), SignalValue, 0u, nullptr, nullptr);
   }
   case CGType::AsyncAlloc: {
     // NO-OP. Async alloc calls adapter immediately in order to return a valid

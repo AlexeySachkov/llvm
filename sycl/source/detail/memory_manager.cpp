@@ -128,7 +128,8 @@ static void waitForEvents(const std::vector<EventImplPtr> &Events) {
         Events.begin(), Events.end(), UrEvents.begin(),
         [](const EventImplPtr &EventImpl) { return EventImpl->getHandle(); });
     if (!UrEvents.empty() && UrEvents[0]) {
-      Adapter.call<UrApiKind::urEventWait>(UrEvents.size(), &UrEvents[0]);
+      Adapter.call<UrApiKind::urEventWait>(
+          static_cast<uint32_t>(UrEvents.size()), &UrEvents[0]);
     }
   }
 }
@@ -241,7 +242,7 @@ void memUnmapHelper(adapter_impl &Adapter, ur_queue_handle_t Queue,
       // Always use call_nocheck here, because call may throw an exception,
       // and this lambda will be called from destructor, which in combination
       // rewards us with UB.
-      Adapter.call_nocheck<UrApiKind::urEventWait>(1, Event);
+      Adapter.call_nocheck<UrApiKind::urEventWait>(1u, Event);
       emitMemReleaseEndTrace(MemObjID, Ptr, CorrID);
     }};
 #endif
@@ -371,9 +372,9 @@ MemoryManager::allocateBufferObject(context_impl *TargetContext, void *UserPtr,
       UR_STRUCTURE_TYPE_BUFFER_ALLOC_LOCATION_PROPERTIES, nullptr, 0};
   if (PropsList.has_property<property::buffer::detail::buffer_location>() &&
       TargetContext->isBufferLocationSupported()) {
-    LocationProperties.location =
+    LocationProperties.location = static_cast<uint32_t>(
         PropsList.get_property<property::buffer::detail::buffer_location>()
-            .get_buffer_location();
+            .get_buffer_location());
     *Next = &LocationProperties;
     Next = &LocationProperties.pNext;
   }
@@ -441,7 +442,7 @@ void *MemoryManager::allocateMemSubBuffer(context_impl *TargetContext,
     return static_cast<void *>(static_cast<char *>(ParentMemObj) + Offset);
 
   size_t SizeInBytes = ElemSize;
-  for (size_t I = 0; I < 3; ++I)
+  for (int I = 0; I < 3; ++I)
     SizeInBytes *= Range[I];
 
   ur_result_t Error = UR_RESULT_SUCCESS;
@@ -469,7 +470,7 @@ struct TermPositions {
   int YTerm;
   int ZTerm;
 };
-void prepTermPositions(TermPositions &pos, int Dimensions,
+void prepTermPositions(TermPositions &pos, unsigned Dimensions,
                        detail::SYCLMemObjI::MemObjType Type) {
   // For buffers, the offsets/ranges coming from accessor are always
   // id<3>/range<3> But their organization varies by dimension:
@@ -524,7 +525,8 @@ void copyH2D(queue_impl &TgtQueue, SYCLMemObjI *SYCLMemObj, char *SrcMem,
       Adapter.call<UrApiKind::urEnqueueMemBufferWrite>(
           Queue, DstMem,
           /*blocking_write=*/false, DstXOffBytes, DstAccessRangeWidthBytes,
-          SrcMem + SrcXOffBytes, DepEvents.size(), DepEvents.data(), &OutEvent);
+          SrcMem + SrcXOffBytes, static_cast<uint32_t>(DepEvents.size()),
+          DepEvents.data(), &OutEvent);
     } else {
       size_t BufferRowPitch = (1 == DimDst) ? 0 : DstSzWidthBytes;
       size_t BufferSlicePitch =
@@ -544,7 +546,8 @@ void copyH2D(queue_impl &TgtQueue, SYCLMemObjI *SYCLMemObj, char *SrcMem,
           Queue, DstMem,
           /*blocking_write=*/false, BufferOffset, HostOffset, RectRegion,
           BufferRowPitch, BufferSlicePitch, HostRowPitch, HostSlicePitch,
-          SrcMem, DepEvents.size(), DepEvents.data(), &OutEvent);
+          SrcMem, static_cast<uint32_t>(DepEvents.size()), DepEvents.data(),
+          &OutEvent);
     }
   } else {
     size_t InputRowPitch = (1 == DimDst) ? 0 : DstSzWidthBytes;
@@ -559,7 +562,8 @@ void copyH2D(queue_impl &TgtQueue, SYCLMemObjI *SYCLMemObj, char *SrcMem,
     Adapter.call<UrApiKind::urEnqueueMemImageWrite>(
         Queue, DstMem,
         /*blocking_write=*/false, Origin, Region, InputRowPitch,
-        InputSlicePitch, SrcMem, DepEvents.size(), DepEvents.data(), &OutEvent);
+        InputSlicePitch, SrcMem, static_cast<uint32_t>(DepEvents.size()),
+        DepEvents.data(), &OutEvent);
   }
 }
 
@@ -599,7 +603,8 @@ void copyD2H(queue_impl &SrcQueue, SYCLMemObjI *SYCLMemObj,
       Adapter.call<UrApiKind::urEnqueueMemBufferRead>(
           Queue, SrcMem,
           /*blocking_read=*/false, SrcXOffBytes, SrcAccessRangeWidthBytes,
-          DstMem + DstXOffBytes, DepEvents.size(), DepEvents.data(), &OutEvent);
+          DstMem + DstXOffBytes, static_cast<uint32_t>(DepEvents.size()),
+          DepEvents.data(), &OutEvent);
     } else {
       size_t BufferRowPitch = (1 == DimSrc) ? 0 : SrcSzWidthBytes;
       size_t BufferSlicePitch =
@@ -619,7 +624,8 @@ void copyD2H(queue_impl &SrcQueue, SYCLMemObjI *SYCLMemObj,
           Queue, SrcMem,
           /*blocking_read=*/false, BufferOffset, HostOffset, RectRegion,
           BufferRowPitch, BufferSlicePitch, HostRowPitch, HostSlicePitch,
-          DstMem, DepEvents.size(), DepEvents.data(), &OutEvent);
+          DstMem, static_cast<uint32_t>(DepEvents.size()), DepEvents.data(),
+          &OutEvent);
     }
   } else {
     size_t RowPitch = (1 == DimSrc) ? 0 : SrcSzWidthBytes;
@@ -633,7 +639,7 @@ void copyD2H(queue_impl &SrcQueue, SYCLMemObjI *SYCLMemObj,
                             SrcAccessRange[SrcPos.ZTerm]};
     Adapter.call<UrApiKind::urEnqueueMemImageRead>(
         Queue, SrcMem, false, Offset, Region, RowPitch, SlicePitch, DstMem,
-        DepEvents.size(), DepEvents.data(), &OutEvent);
+        static_cast<uint32_t>(DepEvents.size()), DepEvents.data(), &OutEvent);
   }
 }
 
@@ -667,8 +673,8 @@ void copyD2D(queue_impl &SrcQueue, SYCLMemObjI *SYCLMemObj,
     if (1 == DimDst && 1 == DimSrc) {
       Adapter.call<UrApiKind::urEnqueueMemBufferCopy>(
           Queue, SrcMem, DstMem, SrcXOffBytes, DstXOffBytes,
-          SrcAccessRangeWidthBytes, DepEvents.size(), DepEvents.data(),
-          &OutEvent);
+          SrcAccessRangeWidthBytes, static_cast<uint32_t>(DepEvents.size()),
+          DepEvents.data(), &OutEvent);
     } else {
       // passing 0 for pitches not allowed. Because clEnqueueCopyBufferRect will
       // calculate both src and dest pitch using region[0], which is not correct
@@ -691,8 +697,9 @@ void copyD2D(queue_impl &SrcQueue, SYCLMemObjI *SYCLMemObj,
                               SrcAccessRange[SrcPos.ZTerm]};
       Adapter.call<UrApiKind::urEnqueueMemBufferCopyRect>(
           Queue, SrcMem, DstMem, SrcOrigin, DstOrigin, Region, SrcRowPitch,
-          SrcSlicePitch, DstRowPitch, DstSlicePitch, DepEvents.size(),
-          DepEvents.data(), &OutEvent);
+          SrcSlicePitch, DstRowPitch, DstSlicePitch,
+          static_cast<uint32_t>(DepEvents.size()), DepEvents.data(),
+          &OutEvent);
     }
   } else {
     ur_rect_offset_t SrcOrigin{SrcOffset[SrcPos.XTerm], SrcOffset[SrcPos.YTerm],
@@ -703,8 +710,8 @@ void copyD2D(queue_impl &SrcQueue, SYCLMemObjI *SYCLMemObj,
                             SrcAccessRange[SrcPos.YTerm],
                             SrcAccessRange[SrcPos.ZTerm]};
     Adapter.call<UrApiKind::urEnqueueMemImageCopy>(
-        Queue, SrcMem, DstMem, SrcOrigin, DstOrigin, Region, DepEvents.size(),
-        DepEvents.data(), &OutEvent);
+        Queue, SrcMem, DstMem, SrcOrigin, DstOrigin, Region,
+        static_cast<uint32_t>(DepEvents.size()), DepEvents.data(), &OutEvent);
   }
 }
 
@@ -798,7 +805,7 @@ void MemoryManager::fill(SYCLMemObjI *SYCLMemObj, void *Mem, queue_impl &Queue,
       Adapter.call<UrApiKind::urEnqueueMemBufferFill>(
           Queue.getHandleRef(), ur::cast<ur_mem_handle_t>(Mem), Pattern,
           PatternSize, Offset[0] * ElementSize, RangeMultiplier * ElementSize,
-          DepEvents.size(), DepEvents.data(), &OutEvent);
+          static_cast<uint32_t>(DepEvents.size()), DepEvents.data(), &OutEvent);
       return;
     }
     // The sycl::handler uses a parallel_for kernel in the case of unusable
@@ -850,8 +857,9 @@ void *MemoryManager::map(SYCLMemObjI *, void *Mem, queue_impl &Queue,
   adapter_impl &Adapter = Queue.getAdapter();
   memBufferMapHelper(Adapter, Queue.getHandleRef(),
                      ur::cast<ur_mem_handle_t>(Mem), false, Flags,
-                     AccessOffset[0], BytesToMap, DepEvents.size(),
-                     DepEvents.data(), &OutEvent, &MappedPtr);
+                     AccessOffset[0], BytesToMap,
+                     static_cast<uint32_t>(DepEvents.size()), DepEvents.data(),
+                     &OutEvent, &MappedPtr);
   return MappedPtr;
 }
 
@@ -864,7 +872,8 @@ void MemoryManager::unmap(SYCLMemObjI *, void *Mem, queue_impl &Queue,
 
   adapter_impl &Adapter = Queue.getAdapter();
   memUnmapHelper(Adapter, Queue.getHandleRef(), ur::cast<ur_mem_handle_t>(Mem),
-                 MappedPtr, DepEvents.size(), DepEvents.data(), &OutEvent);
+                 MappedPtr, static_cast<uint32_t>(DepEvents.size()),
+                 DepEvents.data(), &OutEvent);
 }
 
 void MemoryManager::copy_usm(const void *SrcMem, queue_impl &SrcQueue,
@@ -874,9 +883,9 @@ void MemoryManager::copy_usm(const void *SrcMem, queue_impl &SrcQueue,
   adapter_impl &Adapter = SrcQueue.getAdapter();
   if (!Len) { // no-op, but ensure DepEvents will still be waited on
     if (!DepEvents.empty()) {
-      Adapter.call<UrApiKind::urEnqueueEventsWait>(SrcQueue.getHandleRef(),
-                                                   DepEvents.size(),
-                                                   DepEvents.data(), OutEvent);
+      Adapter.call<UrApiKind::urEnqueueEventsWait>(
+          SrcQueue.getHandleRef(), static_cast<uint32_t>(DepEvents.size()),
+          DepEvents.data(), OutEvent);
     }
     return;
   }
@@ -885,10 +894,10 @@ void MemoryManager::copy_usm(const void *SrcMem, queue_impl &SrcQueue,
     throw exception(make_error_code(errc::invalid),
                     "NULL pointer argument in memory copy operation.");
 
-  Adapter.call<UrApiKind::urEnqueueUSMMemcpy>(SrcQueue.getHandleRef(),
-                                              /* blocking */ false, DstMem,
-                                              SrcMem, Len, DepEvents.size(),
-                                              DepEvents.data(), OutEvent);
+  Adapter.call<UrApiKind::urEnqueueUSMMemcpy>(
+      SrcQueue.getHandleRef(),
+      /* blocking */ false, DstMem, SrcMem, Len,
+      static_cast<uint32_t>(DepEvents.size()), DepEvents.data(), OutEvent);
 }
 
 void MemoryManager::context_copy_usm(const void *SrcMem, context_impl *Context,
@@ -908,7 +917,8 @@ void MemoryManager::fill_usm(void *Mem, queue_impl &Queue, size_t Length,
   if (!Length) { // no-op, but ensure DepEvents will still be waited on
     if (!DepEvents.empty()) {
       Queue.getAdapter().call<UrApiKind::urEnqueueEventsWait>(
-          Queue.getHandleRef(), DepEvents.size(), DepEvents.data(), OutEvent);
+          Queue.getHandleRef(), static_cast<uint32_t>(DepEvents.size()),
+          DepEvents.data(), OutEvent);
     }
     return;
   }
@@ -919,16 +929,17 @@ void MemoryManager::fill_usm(void *Mem, queue_impl &Queue, size_t Length,
   adapter_impl &Adapter = Queue.getAdapter();
   Adapter.call<UrApiKind::urEnqueueUSMFill>(
       Queue.getHandleRef(), Mem, Pattern.size(), Pattern.data(), Length,
-      DepEvents.size(), DepEvents.data(), OutEvent);
+      static_cast<uint32_t>(DepEvents.size()), DepEvents.data(), OutEvent);
 }
 
 void MemoryManager::prefetch_usm(void *Mem, queue_impl &Queue, size_t Length,
                                  std::vector<ur_event_handle_t> DepEvents,
                                  ur_event_handle_t *OutEvent) {
   adapter_impl &Adapter = Queue.getAdapter();
-  Adapter.call<UrApiKind::urEnqueueUSMPrefetch>(Queue.getHandleRef(), Mem,
-                                                Length, 0, DepEvents.size(),
-                                                DepEvents.data(), OutEvent);
+  Adapter.call<UrApiKind::urEnqueueUSMPrefetch>(
+      Queue.getHandleRef(), Mem, Length,
+      static_cast<ur_usm_migration_flags_t>(0),
+      static_cast<uint32_t>(DepEvents.size()), DepEvents.data(), OutEvent);
 }
 
 void MemoryManager::advise_usm(const void *Mem, queue_impl &Queue,
@@ -949,7 +960,8 @@ void MemoryManager::copy_2d_usm(const void *SrcMem, size_t SrcPitch,
     // no-op, but ensure DepEvents will still be waited on
     if (!DepEvents.empty()) {
       Queue.getAdapter().call<UrApiKind::urEnqueueEventsWait>(
-          Queue.getHandleRef(), DepEvents.size(), DepEvents.data(), OutEvent);
+          Queue.getHandleRef(), static_cast<uint32_t>(DepEvents.size()),
+          DepEvents.data(), OutEvent);
     }
     return;
   }
@@ -971,7 +983,7 @@ void MemoryManager::copy_2d_usm(const void *SrcMem, size_t SrcPitch,
     Adapter.call<UrApiKind::urEnqueueUSMMemcpy2D>(
         Queue.getHandleRef(),
         /*blocking=*/false, DstMem, DstPitch, SrcMem, SrcPitch, Width, Height,
-        DepEvents.size(), DepEvents.data(), OutEvent);
+        static_cast<uint32_t>(DepEvents.size()), DepEvents.data(), OutEvent);
     return;
   }
 
@@ -999,14 +1011,16 @@ void MemoryManager::copy_2d_usm(const void *SrcMem, size_t SrcPitch,
     const char *SrcItBegin = static_cast<const char *>(SrcMem) + I * SrcPitch;
     Adapter.call<UrApiKind::urEnqueueUSMMemcpy>(
         Queue.getHandleRef(),
-        /* blocking */ false, DstItBegin, SrcItBegin, Width, DepEvents.size(),
-        DepEvents.data(), CopyEvents.data() + I);
+        /* blocking */ false, DstItBegin, SrcItBegin, Width,
+        static_cast<uint32_t>(DepEvents.size()), DepEvents.data(),
+        CopyEvents.data() + I);
     CopyEventsManaged.emplace_back(CopyEvents[I], Adapter,
                                    /*TakeOwnership=*/true);
   }
   // Then insert a wait to coalesce the copy events.
   Queue.getAdapter().call<UrApiKind::urEnqueueEventsWait>(
-      Queue.getHandleRef(), CopyEvents.size(), CopyEvents.data(), OutEvent);
+      Queue.getHandleRef(), static_cast<uint32_t>(CopyEvents.size()),
+      CopyEvents.data(), OutEvent);
 }
 
 void MemoryManager::fill_2d_usm(void *DstMem, queue_impl &Queue, size_t Pitch,
@@ -1018,7 +1032,8 @@ void MemoryManager::fill_2d_usm(void *DstMem, queue_impl &Queue, size_t Pitch,
     // no-op, but ensure DepEvents will still be waited on
     if (!DepEvents.empty()) {
       Queue.getAdapter().call<UrApiKind::urEnqueueEventsWait>(
-          Queue.getHandleRef(), DepEvents.size(), DepEvents.data(), OutEvent);
+          Queue.getHandleRef(), static_cast<uint32_t>(DepEvents.size()),
+          DepEvents.data(), OutEvent);
     }
     return;
   }
@@ -1029,7 +1044,8 @@ void MemoryManager::fill_2d_usm(void *DstMem, queue_impl &Queue, size_t Pitch,
   adapter_impl &Adapter = Queue.getAdapter();
   Adapter.call<UrApiKind::urEnqueueUSMFill2D>(
       Queue.getHandleRef(), DstMem, Pitch, Pattern.size(), Pattern.data(),
-      Width, Height, DepEvents.size(), DepEvents.data(), OutEvent);
+      Width, Height, static_cast<uint32_t>(DepEvents.size()), DepEvents.data(),
+      OutEvent);
 }
 
 void MemoryManager::memset_2d_usm(void *DstMem, queue_impl &Queue, size_t Pitch,
@@ -1040,7 +1056,8 @@ void MemoryManager::memset_2d_usm(void *DstMem, queue_impl &Queue, size_t Pitch,
     // no-op, but ensure DepEvents will still be waited on
     if (!DepEvents.empty()) {
       Queue.getAdapter().call<UrApiKind::urEnqueueEventsWait>(
-          Queue.getHandleRef(), DepEvents.size(), DepEvents.data(), OutEvent);
+          Queue.getHandleRef(), static_cast<uint32_t>(DepEvents.size()),
+          DepEvents.data(), OutEvent);
     }
     return;
   }
@@ -1166,8 +1183,8 @@ memcpyToDeviceGlobalDirect(queue_impl &Queue,
   adapter_impl &Adapter = Queue.getAdapter();
   Adapter.call<UrApiKind::urEnqueueDeviceGlobalVariableWrite>(
       Queue.getHandleRef(), Program, DeviceGlobalEntry->MUniqueId.c_str(),
-      false, NumBytes, Offset, Src, DepEvents.size(), DepEvents.data(),
-      OutEvent);
+      false, NumBytes, Offset, Src, static_cast<uint32_t>(DepEvents.size()),
+      DepEvents.data(), OutEvent);
 }
 
 static void memcpyFromDeviceGlobalDirect(
@@ -1179,8 +1196,8 @@ static void memcpyFromDeviceGlobalDirect(
   adapter_impl &Adapter = Queue.getAdapter();
   Adapter.call<UrApiKind::urEnqueueDeviceGlobalVariableRead>(
       Queue.getHandleRef(), Program, DeviceGlobalEntry->MUniqueId.c_str(),
-      false, NumBytes, Offset, Dest, DepEvents.size(), DepEvents.data(),
-      OutEvent);
+      false, NumBytes, Offset, Dest, static_cast<uint32_t>(DepEvents.size()),
+      DepEvents.data(), OutEvent);
 }
 
 void MemoryManager::copy_to_device_global(
@@ -1263,8 +1280,9 @@ void MemoryManager::ext_oneapi_copyD2D_cmd_buffer(
     Adapter->call<UrApiKind::urCommandBufferAppendMemBufferCopyExp>(
         CommandBuffer, sycl::detail::ur::cast<ur_mem_handle_t>(SrcMem),
         sycl::detail::ur::cast<ur_mem_handle_t>(DstMem), SrcXOffBytes,
-        DstXOffBytes, SrcAccessRangeWidthBytes, Deps.size(), Deps.data(), 0,
-        nullptr, OutSyncPoint, nullptr, nullptr);
+        DstXOffBytes, SrcAccessRangeWidthBytes,
+        static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr,
+        OutSyncPoint, nullptr, nullptr);
   } else {
     // passing 0 for pitches not allowed. Because clEnqueueCopyBufferRect will
     // calculate both src and dest pitch using region[0], which is not correct
@@ -1290,7 +1308,8 @@ void MemoryManager::ext_oneapi_copyD2D_cmd_buffer(
         CommandBuffer, sycl::detail::ur::cast<ur_mem_handle_t>(SrcMem),
         sycl::detail::ur::cast<ur_mem_handle_t>(DstMem), SrcOrigin, DstOrigin,
         Region, SrcRowPitch, SrcSlicePitch, DstRowPitch, DstSlicePitch,
-        Deps.size(), Deps.data(), 0, nullptr, OutSyncPoint, nullptr, nullptr);
+        static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr,
+        OutSyncPoint, nullptr, nullptr);
   }
 }
 
@@ -1328,8 +1347,8 @@ void MemoryManager::ext_oneapi_copyD2H_cmd_buffer(
         Adapter->call_nocheck<UrApiKind::urCommandBufferAppendMemBufferReadExp>(
             CommandBuffer, sycl::detail::ur::cast<ur_mem_handle_t>(SrcMem),
             SrcXOffBytes, SrcAccessRangeWidthBytes, DstMem + DstXOffBytes,
-            Deps.size(), Deps.data(), 0, nullptr, OutSyncPoint, nullptr,
-            nullptr);
+            static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr,
+            OutSyncPoint, nullptr, nullptr);
 
     if (Result == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
       throw sycl::exception(
@@ -1358,8 +1377,9 @@ void MemoryManager::ext_oneapi_copyD2H_cmd_buffer(
         UrApiKind::urCommandBufferAppendMemBufferReadRectExp>(
         CommandBuffer, sycl::detail::ur::cast<ur_mem_handle_t>(SrcMem),
         BufferOffset, HostOffset, RectRegion, BufferRowPitch, BufferSlicePitch,
-        HostRowPitch, HostSlicePitch, DstMem, Deps.size(), Deps.data(), 0,
-        nullptr, OutSyncPoint, nullptr, nullptr);
+        HostRowPitch, HostSlicePitch, DstMem,
+        static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr,
+        OutSyncPoint, nullptr, nullptr);
     if (Result == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
       throw sycl::exception(
           sycl::make_error_code(sycl::errc::feature_not_supported),
@@ -1405,8 +1425,8 @@ void MemoryManager::ext_oneapi_copyH2D_cmd_buffer(
             ->call_nocheck<UrApiKind::urCommandBufferAppendMemBufferWriteExp>(
                 CommandBuffer, sycl::detail::ur::cast<ur_mem_handle_t>(DstMem),
                 DstXOffBytes, DstAccessRangeWidthBytes, SrcMem + SrcXOffBytes,
-                Deps.size(), Deps.data(), 0, nullptr, OutSyncPoint, nullptr,
-                nullptr);
+                static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr,
+                OutSyncPoint, nullptr, nullptr);
 
     if (Result == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
       throw sycl::exception(
@@ -1435,8 +1455,9 @@ void MemoryManager::ext_oneapi_copyH2D_cmd_buffer(
         UrApiKind::urCommandBufferAppendMemBufferWriteRectExp>(
         CommandBuffer, sycl::detail::ur::cast<ur_mem_handle_t>(DstMem),
         BufferOffset, HostOffset, RectRegion, BufferRowPitch, BufferSlicePitch,
-        HostRowPitch, HostSlicePitch, SrcMem, Deps.size(), Deps.data(), 0,
-        nullptr, OutSyncPoint, nullptr, nullptr);
+        HostRowPitch, HostSlicePitch, SrcMem,
+        static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr,
+        OutSyncPoint, nullptr, nullptr);
 
     if (Result == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
       throw sycl::exception(
@@ -1460,8 +1481,9 @@ void MemoryManager::ext_oneapi_copy_usm_cmd_buffer(
   const AdapterPtr &Adapter = Context->getAdapter();
   ur_result_t Result =
       Adapter->call_nocheck<UrApiKind::urCommandBufferAppendUSMMemcpyExp>(
-          CommandBuffer, DstMem, SrcMem, Len, Deps.size(), Deps.data(), 0,
-          nullptr, OutSyncPoint, nullptr, nullptr);
+          CommandBuffer, DstMem, SrcMem, Len,
+          static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr,
+          OutSyncPoint, nullptr, nullptr);
   if (Result == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
     throw sycl::exception(
         sycl::make_error_code(sycl::errc::feature_not_supported),
@@ -1486,7 +1508,8 @@ void MemoryManager::ext_oneapi_fill_usm_cmd_buffer(
   ur_result_t Result =
       Adapter->call_nocheck<UrApiKind::urCommandBufferAppendUSMFillExp>(
           CommandBuffer, DstMem, Pattern.data(), Pattern.size(), Len,
-          Deps.size(), Deps.data(), 0, nullptr, OutSyncPoint, nullptr, nullptr);
+          static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr,
+          OutSyncPoint, nullptr, nullptr);
   if (Result == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
     throw sycl::exception(
         sycl::make_error_code(sycl::errc::feature_not_supported),
@@ -1524,7 +1547,8 @@ void MemoryManager::ext_oneapi_fill_cmd_buffer(
     Adapter->call<UrApiKind::urCommandBufferAppendMemBufferFillExp>(
         CommandBuffer, ur::cast<ur_mem_handle_t>(Mem), Pattern, PatternSize,
         AccessOffset[0] * ElementSize, RangeMultiplier * ElementSize,
-        Deps.size(), Deps.data(), 0, nullptr, OutSyncPoint, nullptr, nullptr);
+        static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr,
+        OutSyncPoint, nullptr, nullptr);
     return;
   }
   // The sycl::handler uses a parallel_for kernel in the case of unusable
@@ -1540,8 +1564,9 @@ void MemoryManager::ext_oneapi_prefetch_usm_cmd_buffer(
     ur_exp_command_buffer_sync_point_t *OutSyncPoint) {
   const AdapterPtr &Adapter = Context->getAdapter();
   Adapter->call<UrApiKind::urCommandBufferAppendUSMPrefetchExp>(
-      CommandBuffer, Mem, Length, ur_usm_migration_flags_t(0), Deps.size(),
-      Deps.data(), 0, nullptr, OutSyncPoint, nullptr, nullptr);
+      CommandBuffer, Mem, Length, ur_usm_migration_flags_t(0),
+      static_cast<uint32_t>(Deps.size()), Deps.data(), 0u, nullptr, OutSyncPoint,
+      nullptr, nullptr);
 }
 
 void MemoryManager::ext_oneapi_advise_usm_cmd_buffer(
@@ -1552,8 +1577,8 @@ void MemoryManager::ext_oneapi_advise_usm_cmd_buffer(
     ur_exp_command_buffer_sync_point_t *OutSyncPoint) {
   const AdapterPtr &Adapter = Context->getAdapter();
   Adapter->call<UrApiKind::urCommandBufferAppendUSMAdviseExp>(
-      CommandBuffer, Mem, Length, Advice, Deps.size(), Deps.data(), 0, nullptr,
-      OutSyncPoint, nullptr, nullptr);
+      CommandBuffer, Mem, Length, Advice, static_cast<uint32_t>(Deps.size()),
+      Deps.data(), 0u, nullptr, OutSyncPoint, nullptr, nullptr);
 }
 
 void MemoryManager::copy_image_bindless(
@@ -1584,8 +1609,8 @@ void MemoryManager::copy_image_bindless(
 
   Adapter.call<UrApiKind::urBindlessImagesImageCopyExp>(
       Queue.getHandleRef(), Src, Dst, &SrcDesc, &DstDesc, &SrcFormat,
-      &DstFormat, &CopyRegion, Flags, DepEvents.size(), DepEvents.data(),
-      OutEvent);
+      &DstFormat, &CopyRegion, Flags, static_cast<uint32_t>(DepEvents.size()),
+      DepEvents.data(), OutEvent);
 }
 
 } // namespace detail

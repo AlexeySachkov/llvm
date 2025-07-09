@@ -121,7 +121,7 @@ fill_image_type(const ext::oneapi::experimental::image_descriptor &Desc,
   UrDesc.type = Desc.depth > 0 ? UR_MEM_TYPE_IMAGE3D
                                : (Desc.height > 0 ? UR_MEM_TYPE_IMAGE2D
                                                   : UR_MEM_TYPE_IMAGE1D);
-  return Desc.depth;
+  return static_cast<unsigned int>(Desc.depth);
 }
 
 // Fill image format
@@ -447,9 +447,9 @@ event handler::finalize() {
   if (type == detail::CGType::Kernel && impl->MKernelFuncPtr &&
       (!KernelFastPath || impl->MKernelHasSpecialCaptures)) {
     clearArgs();
-    extractArgsAndReqsFromLambda((char *)impl->MKernelFuncPtr,
-                                 impl->MKernelParamDescGetter,
-                                 impl->MKernelNumArgs, impl->MKernelIsESIMD);
+    extractArgsAndReqsFromLambda(
+        (char *)impl->MKernelFuncPtr, impl->MKernelParamDescGetter,
+        static_cast<size_t>(impl->MKernelNumArgs), impl->MKernelIsESIMD);
   }
 
   // According to 4.7.6.9 of SYCL2020 spec, if a placeholder accessor is passed
@@ -580,13 +580,13 @@ event handler::finalize() {
 #endif
       auto EnqueueKernel = [&]() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-        int32_t StreamID = xpti::invalid_id<>;
+        auto StreamID = xpti::invalid_id<>;
         xpti_td *CmdTraceEvent = nullptr;
         uint64_t InstanceID = 0;
         if (xptiEnabled) {
           StreamID = xptiRegisterStream(detail::SYCL_STREAM_NAME);
           std::tie(CmdTraceEvent, InstanceID) = emitKernelInstrumentationData(
-              StreamID, MKernel, MCodeLoc, impl->MIsTopCodeLoc,
+              static_cast<int32_t>(StreamID), MKernel, MCodeLoc, impl->MIsTopCodeLoc,
               MKernelName.data(), impl->MKernelNameBasedCachePtr,
               impl->get_queue_or_null(), impl->MNDRDesc, KernelBundleImpPtr,
               impl->MArgs);
@@ -717,8 +717,8 @@ event handler::finalize() {
     break;
   case detail::CGType::Memset2DUSM:
     CommandGroup.reset(new detail::CGMemset2DUSM(
-        MPattern[0], MDstPtr, impl->MDstPitch, impl->MWidth, impl->MHeight,
-        std::move(impl->CGData), MCodeLoc));
+        static_cast<char>(MPattern[0]), MDstPtr, impl->MDstPitch, impl->MWidth,
+        impl->MHeight, std::move(impl->CGData), MCodeLoc));
     break;
   case detail::CGType::EnqueueNativeCommand:
   case detail::CGType::CodeplayHostTask: {
@@ -1044,7 +1044,8 @@ static void addArgsForLocalAccessor(detail::LocalAccessorImplHost *LAcc,
   // to a single kernel argument set above.
   if (!IsESIMD && !IsKernelCreatedFromSource) {
     ++IndexShift;
-    const size_t SizeAccField = (Dims == 0 ? 1 : Dims) * sizeof(LAccSize[0]);
+    const size_t SizeAccField =
+        (Dims == 0 ? 1 : static_cast<size_t>(Dims)) * sizeof(LAccSize[0]);
     Args.emplace_back(kernel_param_kind_t::kind_std_layout, &LAccSize,
                       SizeAccField, Index + IndexShift);
     ++IndexShift;
@@ -1068,7 +1069,7 @@ void handler::processArg(void *Ptr, const detail::kernel_param_kind_t &Kind,
   switch (Kind) {
   case kernel_param_kind_t::kind_std_layout:
   case kernel_param_kind_t::kind_pointer: {
-    addArg(Kind, Ptr, Size, Index + IndexShift);
+    addArg(Kind, Ptr, Size, static_cast<int>(Index + IndexShift));
     break;
   }
   case kernel_param_kind_t::kind_stream: {
@@ -1109,7 +1110,7 @@ void handler::processArg(void *Ptr, const detail::kernel_param_kind_t &Kind,
                              IsESIMD);
     ++IndexShift;
     addArg(kernel_param_kind_t::kind_std_layout, &S->FlushBufferSize,
-           sizeof(S->FlushBufferSize), Index + IndexShift);
+           sizeof(S->FlushBufferSize), static_cast<int>(Index + IndexShift));
 
     break;
   }
@@ -1138,7 +1139,7 @@ void handler::processArg(void *Ptr, const detail::kernel_param_kind_t &Kind,
     case access::target::image:
     case access::target::image_array: {
       detail::Requirement *AccImpl = static_cast<detail::Requirement *>(Ptr);
-      addArg(Kind, AccImpl, Size, Index + IndexShift);
+      addArg(Kind, AccImpl, Size, static_cast<int>(Index + IndexShift));
       if (!IsKernelCreatedFromSource) {
         // TODO Handle additional kernel arguments for image class
         // if the compiler front-end adds them.
@@ -1167,7 +1168,8 @@ void handler::processArg(void *Ptr, const detail::kernel_param_kind_t &Kind,
       auto *DynParamImpl = static_cast<
           ext::oneapi::experimental::detail::dynamic_parameter_impl *>(Ptr);
 
-      registerDynamicParameter(DynParamImpl, Index + IndexShift);
+      registerDynamicParameter(DynParamImpl,
+                               static_cast<int>(Index + IndexShift));
 
       auto *DynLocalAccessorImpl = static_cast<
           ext::oneapi::experimental::detail::dynamic_local_accessor_impl *>(
@@ -1192,30 +1194,33 @@ void handler::processArg(void *Ptr, const detail::kernel_param_kind_t &Kind,
     auto *DynParamImpl = static_cast<
         ext::oneapi::experimental::detail::dynamic_parameter_impl *>(Ptr);
 
-    registerDynamicParameter(DynParamImpl, Index + IndexShift);
+    registerDynamicParameter(DynParamImpl,
+                             static_cast<int>(Index + IndexShift));
 
     auto *DynWorkGroupImpl = static_cast<
         ext::oneapi::experimental::detail::dynamic_work_group_memory_impl *>(
         DynParamImpl);
 
     addArg(kernel_param_kind_t::kind_std_layout, nullptr,
-           DynWorkGroupImpl->BufferSizeInBytes, Index + IndexShift);
+           static_cast<int>(DynWorkGroupImpl->BufferSizeInBytes),
+           static_cast<int>(Index + IndexShift));
     break;
   }
   case kernel_param_kind_t::kind_work_group_memory: {
     addArg(kernel_param_kind_t::kind_std_layout, nullptr,
-           static_cast<detail::work_group_memory_impl *>(Ptr)->buffer_size,
-           Index + IndexShift);
+           static_cast<int>(
+               static_cast<detail::work_group_memory_impl *>(Ptr)->buffer_size),
+           static_cast<int>(Index + IndexShift));
     break;
   }
   case kernel_param_kind_t::kind_sampler: {
     addArg(kernel_param_kind_t::kind_sampler, Ptr, sizeof(sampler),
-           Index + IndexShift);
+           static_cast<int>(Index + IndexShift));
     break;
   }
   case kernel_param_kind_t::kind_specialization_constants_buffer: {
     addArg(kernel_param_kind_t::kind_specialization_constants_buffer, Ptr, Size,
-           Index + IndexShift);
+           static_cast<int>(Index + IndexShift));
     break;
   }
   case kernel_param_kind_t::kind_invalid:
@@ -1268,8 +1273,8 @@ void handler::extractArgsAndReqs() {
     const detail::kernel_param_kind_t &Kind = UnPreparedArgs[I].MType;
     const int &Size = UnPreparedArgs[I].MSize;
     const int Index = UnPreparedArgs[I].MIndex;
-    processArg(Ptr, Kind, Size, Index, IndexShift, IsKernelCreatedFromSource,
-               false);
+    processArg(Ptr, Kind, Size, static_cast<size_t>(Index), IndexShift,
+               IsKernelCreatedFromSource, false);
   }
 }
 
@@ -1280,7 +1285,8 @@ void handler::extractArgsAndReqsFromLambda(
   impl->MArgs.reserve(MaxNumAdditionalArgs * NumKernelParams);
 
   for (size_t I = 0; I < NumKernelParams; ++I) {
-    detail::kernel_param_desc_t ParamDesc = ParamDescGetter(I);
+    detail::kernel_param_desc_t ParamDesc =
+        ParamDescGetter(static_cast<int>(I));
     void *Ptr = LambdaPtr + ParamDesc.offset;
     const detail::kernel_param_kind_t &Kind = ParamDesc.kind;
     const int &Size = ParamDesc.info;
@@ -1437,7 +1443,7 @@ void handler::memcpy(void *Dest, const void *Src, size_t Count) {
 void handler::memset(void *Dest, int Value, size_t Count) {
   throwIfActionIsCreated();
   MDstPtr = Dest;
-  MPattern.push_back(static_cast<char>(Value));
+  MPattern.push_back(static_cast<unsigned char>(Value));
   MLength = Count;
   setUserFacingNodeType(ext::oneapi::experimental::node_type::memset);
   setType(detail::CGType::FillUSM);
@@ -2289,7 +2295,7 @@ void handler::setKernelClusterLaunch(sycl::range<1> ClusterSize) {
 void handler::setKernelWorkGroupMem(size_t Size) {
   throwIfGraphAssociated<syclex::detail::UnsupportedGraphFeatures::
                              sycl_ext_oneapi_work_group_scratch_memory>();
-  impl->MKernelWorkGroupMemorySize = Size;
+  impl->MKernelWorkGroupMemorySize = static_cast<uint32_t>(Size);
 }
 
 void handler::ext_oneapi_graph(

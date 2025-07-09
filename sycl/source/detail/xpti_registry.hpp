@@ -184,8 +184,9 @@ public:
     if (!TData.functionName() && !TData.fileName())
       FuncName = UserData;
     // Create a tracepoint object that has a lifetime of this class
-    MTP = new TracePoint(TData.fileName(), FuncName, TData.lineNumber(),
-                         TData.columnNumber(), CodePtr);
+    MTP = new TracePoint(TData.fileName(), FuncName,
+                         static_cast<int>(TData.lineNumber()),
+                         static_cast<int>(TData.columnNumber()), CodePtr);
     if (TraceType == (uint16_t)xpti::trace_point_type_t::graph_create ||
         TraceType == (uint16_t)xpti::trace_point_type_t::node_create ||
         TraceType == (uint16_t)xpti::trace_point_type_t::edge_create ||
@@ -221,8 +222,9 @@ public:
     if (!TData.functionName() && !TData.fileName())
       FuncName = UserData;
     // Create a tracepoint object that has a lifetime of this class
-    MTP = new TracePoint(TData.fileName(), FuncName, TData.lineNumber(),
-                         TData.columnNumber(), CodePtr);
+    MTP = new TracePoint(TData.fileName(), FuncName,
+                         static_cast<int>(TData.lineNumber()),
+                         static_cast<int>(TData.columnNumber()), CodePtr);
     if (TraceType == (uint16_t)xpti::trace_point_type_t::graph_create ||
         TraceType == (uint16_t)xpti::trace_point_type_t::node_create ||
         TraceType == (uint16_t)xpti::trace_point_type_t::edge_create ||

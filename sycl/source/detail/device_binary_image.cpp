@@ -69,7 +69,8 @@ uint32_t DeviceBinaryProperty::asUint32() const {
   // if type fits into the ValSize - it is used to store the property value
   assert(Prop->ValAddr == nullptr && "primitive types must be stored inline");
   const auto *P = reinterpret_cast<const unsigned char *>(&Prop->ValSize);
-  return (*P) | (*(P + 1) << 8) | (*(P + 2) << 16) | (*(P + 3) << 24);
+  return static_cast<uint32_t>((*P) | (*(P + 1) << 8) | (*(P + 2) << 16) |
+                               (*(P + 3) << 24));
 }
 
 ByteArray DeviceBinaryProperty::asByteArray() const {
@@ -144,7 +145,7 @@ void RTDeviceBinaryImage::print() const {
 }
 
 void RTDeviceBinaryImage::dump(std::ostream &Out) const {
-  size_t ImgSize = getSize();
+  auto ImgSize = static_cast<std::streamsize>(getSize());
   Out.write(reinterpret_cast<const char *>(Bin->BinaryStart), ImgSize);
 }
 

@@ -111,8 +111,9 @@ __SYCL_EXPORT context make_context(ur_native_handle_t NativeHandle,
     DeviceHandles.push_back(detail::getSyclObjImpl(Dev)->getHandleRef());
   }
   Adapter.call<UrApiKind::urContextCreateWithNativeHandle>(
-      NativeHandle, Adapter.getUrAdapter(), DeviceHandles.size(),
-      DeviceHandles.data(), &Properties, &UrContext);
+      NativeHandle, Adapter.getUrAdapter(),
+      static_cast<uint32_t>(DeviceHandles.size()), DeviceHandles.data(),
+      &Properties, &UrContext);
   // Construct the SYCL context from UR context.
   return detail::createSyclObjFromImpl<context>(context_impl::create(
       UrContext, Handler, Adapter, DeviceList, !KeepOwnership));
@@ -231,7 +232,7 @@ make_kernel_bundle(ur_native_handle_t NativeHandle,
     case (UR_PROGRAM_BINARY_TYPE_NONE):
       if (State == bundle_state::object) {
         auto Res = Adapter.call_nocheck<UrApiKind::urProgramCompileExp>(
-            UrProgram, 1, &Dev, nullptr);
+            UrProgram, 1u, &Dev, nullptr);
         if (Res == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
           Res = Adapter.call_nocheck<UrApiKind::urProgramCompile>(
               ContextImpl.getHandleRef(), UrProgram, nullptr);
@@ -241,7 +242,7 @@ make_kernel_bundle(ur_native_handle_t NativeHandle,
 
       else if (State == bundle_state::executable) {
         auto Res = Adapter.call_nocheck<UrApiKind::urProgramBuildExp>(
-            UrProgram, 1, &Dev, nullptr);
+            UrProgram, 1u, &Dev, nullptr);
         if (Res == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
           Res = Adapter.call_nocheck<UrApiKind::urProgramBuild>(
               ContextImpl.getHandleRef(), UrProgram, nullptr);
@@ -260,11 +261,11 @@ make_kernel_bundle(ur_native_handle_t NativeHandle,
       if (State == bundle_state::executable) {
         ur_program_handle_t UrLinkedProgram = nullptr;
         auto Res = Adapter.call_nocheck<UrApiKind::urProgramLinkExp>(
-            ContextImpl.getHandleRef(), 1, &Dev, 1, &UrProgram, nullptr,
+            ContextImpl.getHandleRef(), 1u, &Dev, 1u, &UrProgram, nullptr,
             &UrLinkedProgram);
         if (Res == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
           Res = Adapter.call_nocheck<UrApiKind::urProgramLink>(
-              ContextImpl.getHandleRef(), 1, &UrProgram, nullptr,
+              ContextImpl.getHandleRef(), 1u, &UrProgram, nullptr,
               &UrLinkedProgram);
         }
         Adapter.checkUrResult<errc::build>(Res);

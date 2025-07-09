@@ -95,7 +95,7 @@ public:
   std::vector<ur_platform_handle_t> &getUrPlatforms() {
     std::call_once(PlatformsPopulated, [&]() {
       uint32_t platformCount = 0;
-      call<UrApiKind::urPlatformGet>(MAdapter, 0, nullptr, &platformCount);
+      call<UrApiKind::urPlatformGet>(MAdapter, 0u, nullptr, &platformCount);
       UrPlatforms.resize(platformCount);
       if (platformCount) {
         call<UrApiKind::urPlatformGet>(MAdapter, platformCount,
@@ -173,10 +173,10 @@ public:
   // Return the index of a UR platform.
   // If not found, add it and return its index.
   // The function is expected to be called in a thread safe manner.
-  int getPlatformId(ur_platform_handle_t Platform) {
+  size_t getPlatformId(ur_platform_handle_t Platform) {
     auto It = std::find(UrPlatforms.begin(), UrPlatforms.end(), Platform);
     if (It != UrPlatforms.end())
-      return It - UrPlatforms.begin();
+      return static_cast<size_t>(It - UrPlatforms.begin());
 
     UrPlatforms.push_back(Platform);
     LastDeviceIds.push_back(0);
@@ -189,7 +189,7 @@ public:
   // return the last device id of the predecessor platform.
   // The function is expected to be called in a thread safe manner.
   int getStartingDeviceId(ur_platform_handle_t Platform) {
-    int PlatformId = getPlatformId(Platform);
+    size_t PlatformId = getPlatformId(Platform);
     if (PlatformId == 0)
       return 0;
     return LastDeviceIds[PlatformId - 1];
@@ -198,7 +198,7 @@ public:
   // set the id of the last device for the given platform
   // The function is expected to be called in a thread safe manner.
   void setLastDeviceId(ur_platform_handle_t Platform, int Id) {
-    int PlatformId = getPlatformId(Platform);
+    size_t PlatformId = getPlatformId(Platform);
     LastDeviceIds[PlatformId] = Id;
   }
 
@@ -206,7 +206,7 @@ public:
   // Involved when there is no device on that platform at all.
   // The function is expected to be called in a thread safe manner.
   void adjustLastDeviceId(ur_platform_handle_t Platform) {
-    int PlatformId = getPlatformId(Platform);
+    size_t PlatformId = getPlatformId(Platform);
     if (PlatformId > 0 &&
         LastDeviceIds[PlatformId] < LastDeviceIds[PlatformId - 1])
       LastDeviceIds[PlatformId] = LastDeviceIds[PlatformId - 1];

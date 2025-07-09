@@ -809,8 +809,8 @@ __SYCL_EXPORT void *pitched_alloc_device(size_t *resultPitch,
                                          const image_descriptor &desc,
                                          const sycl::device &syclDevice,
                                          const sycl::context &syclContext) {
-  unsigned int elementSizeBytes =
-      sycl::detail::getImageElementSize(desc.num_channels, desc.channel_type);
+  unsigned int elementSizeBytes = sycl::detail::getImageElementSize(
+      static_cast<uint8_t>(desc.num_channels), desc.channel_type);
 
   size_t widthInBytes = desc.width * elementSizeBytes;
   size_t height = desc.height;

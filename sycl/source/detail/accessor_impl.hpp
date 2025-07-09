@@ -47,10 +47,11 @@ public:
                    bool IsSubBuffer = false,
                    const property_list &PropertyList = {})
       : MAccData(Offset, AccessRange, MemoryRange), MAccessMode(AccessMode),
-        MSYCLMemObj((detail::SYCLMemObjI *)SYCLMemObject), MDims(Dims),
-        MElemSize(ElemSize), MOffsetInBytes(OffsetInBytes),
-        MIsSubBuffer(IsSubBuffer), MPropertyList(PropertyList),
-        MIsPlaceH(false) {}
+        MSYCLMemObj((detail::SYCLMemObjI *)SYCLMemObject),
+        MDims(static_cast<unsigned>(Dims)),
+        MElemSize(static_cast<unsigned>(ElemSize)),
+        MOffsetInBytes(OffsetInBytes), MIsSubBuffer(IsSubBuffer),
+        MPropertyList(PropertyList), MIsPlaceH(false) {}
 
   AccessorImplHost(id<3> Offset, range<3> AccessRange, range<3> MemoryRange,
                    access::mode AccessMode, void *SYCLMemObject, int Dims,
@@ -58,10 +59,11 @@ public:
                    bool IsSubBuffer = false,
                    const property_list &PropertyList = {})
       : MAccData(Offset, AccessRange, MemoryRange), MAccessMode(AccessMode),
-        MSYCLMemObj((detail::SYCLMemObjI *)SYCLMemObject), MDims(Dims),
-        MElemSize(ElemSize), MOffsetInBytes(OffsetInBytes),
-        MIsSubBuffer(IsSubBuffer), MPropertyList(PropertyList),
-        MIsPlaceH(IsPlaceH) {}
+        MSYCLMemObj((detail::SYCLMemObjI *)SYCLMemObject),
+        MDims(static_cast<unsigned>(Dims)),
+        MElemSize(static_cast<unsigned>(ElemSize)),
+        MOffsetInBytes(OffsetInBytes), MIsSubBuffer(IsSubBuffer),
+        MPropertyList(PropertyList), MIsPlaceH(IsPlaceH) {}
 
   ~AccessorImplHost();
 

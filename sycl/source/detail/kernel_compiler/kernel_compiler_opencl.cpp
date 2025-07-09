@@ -188,9 +188,10 @@ std::string InvokeOclocQuery(const std::vector<uint32_t> &IPVersionVec,
   decltype(::oclocInvoke) *OclocInvokeFunc =
       reinterpret_cast<decltype(::oclocInvoke) *>(oclocInvokeHandle);
 
-  int InvokeError = OclocInvokeFunc(
-      Args.size(), Args.data(), 0, nullptr, 0, nullptr, 0, nullptr, nullptr,
-      nullptr, &NumOutputs, &Outputs, &OutputLengths, &OutputNames);
+  int InvokeError =
+      OclocInvokeFunc(static_cast<uint32_t>(Args.size()), Args.data(), 0,
+                      nullptr, 0, nullptr, 0, nullptr, nullptr, nullptr,
+                      &NumOutputs, &Outputs, &OutputLengths, &OutputNames);
 
   // Gather the results.
   for (uint32_t i = 0; i < NumOutputs; i++) {
@@ -336,10 +337,10 @@ OpenCLC_to_SPIRV(const std::string &Source,
   // invoke
   decltype(::oclocInvoke) *OclocInvokeFunc =
       reinterpret_cast<decltype(::oclocInvoke) *>(oclocInvokeHandle);
-  int CompileError =
-      OclocInvokeFunc(Args.size(), Args.data(), 1, Sources, SourceLengths,
-                      &SourceName, 0, nullptr, nullptr, nullptr, &NumOutputs,
-                      &Outputs, &OutputLengths, &OutputNames);
+  int CompileError = OclocInvokeFunc(
+      static_cast<uint32_t>(Args.size()), Args.data(), 1, Sources,
+      SourceLengths, &SourceName, 0, nullptr, nullptr, nullptr, &NumOutputs,
+      &Outputs, &OutputLengths, &OutputNames);
 
   // gather the results ( the SpirV and the Log)
   spirv_vec_t SpirV;
@@ -464,9 +465,9 @@ bool OpenCLC_Supports_Extension(
             versionStr);
   }
 
-  VersionPtr->major = std::stoi(versionVec[0]);
-  VersionPtr->minor = std::stoi(versionVec[1]);
-  VersionPtr->patch = std::stoi(versionVec[2]);
+  VersionPtr->major = static_cast<unsigned>(std::stoi(versionVec[0]));
+  VersionPtr->minor = static_cast<unsigned>(std::stoi(versionVec[1]));
+  VersionPtr->patch = static_cast<unsigned>(std::stoi(versionVec[2]));
   return true;
 }
 

@@ -238,7 +238,7 @@ platform_impl::filterDeviceFilter(std::vector<ur_device_handle_t> &UrDevices,
       nullptr);
   backend Backend = convertUrBackend(UrBackend);
 
-  int InsertIDx = 0;
+  size_t InsertIDx = 0;
   // DeviceIds should be given consecutive numbers across platforms in the same
   // backend
   std::lock_guard<std::mutex> Guard(*MAdapter->getAdapterMutex());
@@ -494,7 +494,7 @@ platform_impl::get_devices(info::device_type DeviceType) const {
 
   uint32_t NumDevices = 0;
   MAdapter->call<UrApiKind::urDeviceGet>(MPlatform, UrDeviceType,
-                                         0, // CP info::device_type::all
+                                         0u, // CP info::device_type::all
                                          nullptr, &NumDevices);
   const backend Backend = getBackend();
 

@@ -66,7 +66,7 @@ void *alignedAllocHost(size_t Alignment, size_t Size, const sycl::context &Ctxt,
   ur_result_t Error = UR_RESULT_ERROR_INVALID_VALUE;
 
     ur_usm_desc_t UsmDesc{};
-    UsmDesc.align = Alignment;
+    UsmDesc.align = static_cast<uint32_t>(Alignment);
 
     ur_usm_alloc_location_desc_t UsmLocationDesc{};
     UsmLocationDesc.stype = UR_STRUCTURE_TYPE_USM_ALLOC_LOCATION_DESC;
@@ -138,7 +138,7 @@ void *alignedAllocInternal(size_t Alignment, size_t Size,
     Dev = DevImpl->getHandleRef();
 
     ur_usm_desc_t UsmDesc{};
-    UsmDesc.align = Alignment;
+    UsmDesc.align = static_cast<uint32_t>(Alignment);
 
     ur_usm_alloc_location_desc_t UsmLocationDesc{};
     UsmLocationDesc.stype = UR_STRUCTURE_TYPE_USM_ALLOC_LOCATION_DESC;
@@ -165,7 +165,7 @@ void *alignedAllocInternal(size_t Alignment, size_t Size,
     Dev = DevImpl->getHandleRef();
 
     ur_usm_desc_t UsmDesc{};
-    UsmDesc.align = Alignment;
+    UsmDesc.align = static_cast<uint32_t>(Alignment);
 
     ur_usm_alloc_location_desc_t UsmLocationDesc{};
     UsmLocationDesc.stype = UR_STRUCTURE_TYPE_USM_ALLOC_LOCATION_DESC;

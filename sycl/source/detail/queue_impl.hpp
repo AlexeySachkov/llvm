@@ -497,9 +497,9 @@ public:
     ur_queue_index_properties_t IndexProperties = {
         UR_STRUCTURE_TYPE_QUEUE_INDEX_PROPERTIES, nullptr, 0};
     if (has_property<ext::intel::property::queue::compute_index>()) {
-      IndexProperties.computeIndex =
+      IndexProperties.computeIndex = static_cast<uint32_t>(
           get_property<ext::intel::property::queue::compute_index>()
-              .get_index();
+              .get_index());
       Properties.pNext = &IndexProperties;
     }
     getAdapter().call<UrApiKind::urQueueCreate>(Context, Device, &Properties,
@@ -664,7 +664,7 @@ public:
   EventImplPtr insertMarkerEvent() {
     auto ResEvent = detail::event_impl::create_device_event(*this);
     ur_event_handle_t UREvent = nullptr;
-    getAdapter().call<UrApiKind::urEnqueueEventsWait>(getHandleRef(), 0,
+    getAdapter().call<UrApiKind::urEnqueueEventsWait>(getHandleRef(), 0u,
                                                       nullptr, &UREvent);
     ResEvent->setHandle(UREvent);
     return ResEvent;
@@ -690,7 +690,7 @@ protected:
     auto ResEvent = detail::event_impl::create_device_event(Queue);
     ur_event_handle_t UREvent = nullptr;
     getAdapter().call<UrApiKind::urEnqueueEventsWaitWithBarrier>(
-        Queue.getHandleRef(), 0, nullptr, &UREvent);
+        Queue.getHandleRef(), 0u, nullptr, &UREvent);
     ResEvent->setHandle(UREvent);
     return ResEvent;
   }

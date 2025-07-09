@@ -585,8 +585,8 @@ convertWriteData(const float4 WriteData,
       // location from the first element.
       // For CL_UNORM_SHORT_555, bit 15 is undefined, R is in bits 14:10, G
       // in bits 9:5 and B in bits 4:0
-      PixelData.x() =
-          (PixelData.x() << 10) | (PixelData.y() << 5) | PixelData.z();
+      PixelData.x() = static_cast<unsigned short>(
+          (PixelData.x() << 10) | (PixelData.y() << 5) | PixelData.z());
       return PixelData.convert<ChannelType>();
     }
   case image_channel_type::unorm_int_101010:

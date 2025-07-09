@@ -758,7 +758,8 @@ public:
 
     std::string XsFlags = extractXsFlags(BuildOptions, MRTCBinInfo->MLanguage);
     auto Res = Adapter->call_nocheck<UrApiKind::urProgramBuildExp>(
-        UrProgram, DeviceVec.size(), DeviceVec.data(), XsFlags.c_str());
+        UrProgram, static_cast<uint32_t>(DeviceVec.size()), DeviceVec.data(),
+        XsFlags.c_str());
     if (Res == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
       Res = Adapter->call_nocheck<UrApiKind::urProgramBuild>(
           ContextImpl.getHandleRef(), UrProgram, XsFlags.c_str());
@@ -851,7 +852,8 @@ private:
                  return !std::isspace(c);
                }).base();
     if (Start != std::end(str) && End != std::begin(str) && Start < End) {
-      return std::string_view(&*Start, std::distance(Start, End));
+      return std::string_view(&*Start,
+                              static_cast<size_t>(std::distance(Start, End)));
     }
 
     return "";
@@ -911,8 +913,9 @@ private:
     Properties.pMetadatas = nullptr;
 
     Adapter->call<UrApiKind::urProgramCreateWithBinary>(
-        ContextImpl.getHandleRef(), DeviceHandles.size(), DeviceHandles.data(),
-        Lengths.data(), Binaries.data(), &Properties, &UrProgram);
+        ContextImpl.getHandleRef(), static_cast<uint32_t>(DeviceHandles.size()),
+        DeviceHandles.data(), Lengths.data(), Binaries.data(), &Properties,
+        &UrProgram);
 
     return true;
   }
@@ -1260,7 +1263,7 @@ private:
     // Get the kernel names.
     size_t KernelNamesSize;
     Adapter->call<UrApiKind::urProgramGetInfo>(
-        UrProgram, UR_PROGRAM_INFO_KERNEL_NAMES, 0, nullptr, &KernelNamesSize);
+        UrProgram, UR_PROGRAM_INFO_KERNEL_NAMES, 0u, nullptr, &KernelNamesSize);
 
     // semi-colon delimited list of kernel names.
     std::string KernelNamesStr(KernelNamesSize, ' ');

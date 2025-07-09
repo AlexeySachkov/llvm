@@ -349,7 +349,7 @@ public:
     if (!SYCLConfig<SYCL_CACHE_TRACE>::isTraceInMemCache())
       return;
 
-    int ImageId = CacheKey.first.second;
+    auto ImageId = CacheKey.first.second;
     std::stringstream DeviceList;
     DeviceList.imbue(
         std::locale::classic()); // avoid locale issues, like commas
@@ -685,7 +685,7 @@ public:
 
         // Sum up binary sizes.
         ProgramSize =
-            std::accumulate(BinarySizes.begin(), BinarySizes.end(), 0);
+            std::accumulate(BinarySizes.begin(), BinarySizes.end(), 0u);
       } catch (const exception &Ex) {
         std::cerr << "Failed to get program size: " << Ex.what() << std::endl;
         std::rethrow_exception(std::current_exception());

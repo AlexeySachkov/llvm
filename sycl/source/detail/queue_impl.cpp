@@ -238,7 +238,9 @@ event queue_impl::mem_advise(const void *Ptr, size_t Length,
                              bool CallerNeedsEvent) {
   return submitMemOpHelper(
       DepEvents, CallerNeedsEvent,
-      [&](handler &CGH) { CGH.mem_advise(Ptr, Length, Advice); },
+      [&](handler &CGH) {
+        CGH.mem_advise(Ptr, Length, static_cast<int>(Advice));
+      },
       MemoryManager::advise_usm, Ptr, *this, Length, Advice);
 }
 
@@ -513,7 +515,8 @@ void *queue_impl::instrumentationProlog(const detail::code_location &CodeLoc,
   (void)IId;
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   constexpr uint16_t NotificationTraceType = xpti::trace_wait_begin;
-  if (!xptiCheckTraceEnabled(StreamID, NotificationTraceType))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID),
+                             NotificationTraceType))
     return TraceEvent;
 
   xpti::payload_t Payload;
@@ -526,8 +529,9 @@ void *queue_impl::instrumentationProlog(const detail::code_location &CodeLoc,
   if (CodeLoc.fileName()) {
     // We have source code location information
     Payload =
-        xpti::payload_t(Name.c_str(), CodeLoc.fileName(), CodeLoc.lineNumber(),
-                        CodeLoc.columnNumber(), (void *)this);
+        xpti::payload_t(Name.c_str(), CodeLoc.fileName(),
+                        static_cast<int>(CodeLoc.lineNumber()),
+                        static_cast<int>(CodeLoc.columnNumber()), (void *)this);
     HasSourceInfo = true;
   } else {
     // We have no location information, so we'll use the address of the queue
@@ -551,9 +555,9 @@ void *queue_impl::instrumentationProlog(const detail::code_location &CodeLoc,
       xpti::addMetadata(WaitEvent, "sym_column_no",
                         static_cast<int32_t>((CodeLoc.columnNumber())));
     }
-    xptiNotifySubscribers(StreamID, xpti::trace_wait_begin, nullptr, WaitEvent,
-                          QWaitInstanceNo,
-                          static_cast<const void *>(Name.c_str()));
+    xptiNotifySubscribers(
+        static_cast<uint8_t>(StreamID), xpti::trace_wait_begin, nullptr,
+        WaitEvent, QWaitInstanceNo, static_cast<const void *>(Name.c_str()));
     TraceEvent = (void *)WaitEvent;
   }
 #endif
@@ -568,14 +572,16 @@ void queue_impl::instrumentationEpilog(void *TelemetryEvent, std::string &Name,
   (void)IId;
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   constexpr uint16_t NotificationTraceType = xpti::trace_wait_end;
-  if (!(xptiCheckTraceEnabled(StreamID, NotificationTraceType) &&
+  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID),
+                              NotificationTraceType) &&
         TelemetryEvent))
     return;
   // Close the wait() scope
   xpti::trace_event_data_t *TraceEvent =
       (xpti::trace_event_data_t *)TelemetryEvent;
-  xptiNotifySubscribers(StreamID, NotificationTraceType, nullptr, TraceEvent,
-                        IId, static_cast<const void *>(Name.c_str()));
+  xptiNotifySubscribers(static_cast<uint8_t>(StreamID), NotificationTraceType,
+                        nullptr, TraceEvent, IId,
+                        static_cast<const void *>(Name.c_str()));
 #endif
 }
 
@@ -586,10 +592,11 @@ void queue_impl::wait(const detail::code_location &CodeLoc) {
   void *TelemetryEvent = nullptr;
   uint64_t IId;
   std::string Name;
-  int32_t StreamID = xpti::invalid_id<>;
+  auto StreamID = xpti::invalid_id<>;
   if (xptiEnabled) {
     StreamID = xptiRegisterStream(SYCL_STREAM_NAME);
-    TelemetryEvent = instrumentationProlog(CodeLoc, Name, StreamID, IId);
+    TelemetryEvent = instrumentationProlog(CodeLoc, Name,
+                                           static_cast<int32_t>(StreamID), IId);
   }
 #endif
 
@@ -671,7 +678,8 @@ void queue_impl::wait(const detail::code_location &CodeLoc) {
 
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   if (xptiEnabled) {
-    instrumentationEpilog(TelemetryEvent, Name, StreamID, IId);
+    instrumentationEpilog(TelemetryEvent, Name, static_cast<int32_t>(StreamID),
+                          IId);
   }
 #endif
 }

@@ -263,7 +263,7 @@ To ConvertFToS(From Value) {
     if (Err)
       throw sycl::exception(make_error_code(errc::runtime),
                             "Unable to set rounding mode to FE_TONEAREST");
-    To Result = sycl::rint(Value);
+    To Result = static_cast<To>(sycl::rint(Value));
     Err = std::fesetround(OldRoundingDirection);
     if (Err)
       throw sycl::exception(make_error_code(errc::runtime),
@@ -966,7 +966,7 @@ vec<convertT, NumElements> vec<DataT, NumElements>::convert() const {
 #endif // __SYCL_DEVICE_ONLY__
     {
       // Otherwise, we fallback to per-element conversion:
-      for (size_t I = 0; I < NumElements; ++I) {
+      for (int I = 0; I < NumElements; ++I) {
         auto val = detail::convertImpl<T, R, roundingMode, 1, OpenCLT, OpenCLR>(
             getValue(I));
 #ifdef __SYCL_DEVICE_ONLY__

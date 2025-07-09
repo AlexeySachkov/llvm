@@ -166,6 +166,17 @@ template <int N>
 inline constexpr bool is_allowed_vec_size_v =
     N == 1 || N == 2 || N == 3 || N == 4 || N == 8 || N == 16;
 
+// Index type
+// See https://github.com/KhronosGroup/SYCL-Docs/issues/881
+template <typename T> struct index_type;
+template <typename T, int N> struct index_type<vec<T, N>> {
+  using type = int;
+};
+template <typename T, std::size_t N> struct index_type<marray<T, N>> {
+  using type = size_t;
+};
+template <typename T> using index_type_t = typename index_type<T>::type;
+
 } // namespace detail
 } // namespace _V1
 } // namespace sycl

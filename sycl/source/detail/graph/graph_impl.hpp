@@ -710,7 +710,7 @@ public:
   ///
   /// @param Nodes List of nodes to split
   /// @return Map of partition indexes to nodes
-  std::map<int, std::vector<std::shared_ptr<node_impl>>> getURUpdatableNodes(
+  std::map<size_t, std::vector<std::shared_ptr<node_impl>>> getURUpdatableNodes(
       const std::vector<std::shared_ptr<node_impl>> &Nodes) const;
 
   unsigned long long getID() const { return MID; }
@@ -812,7 +812,7 @@ private:
   /// SyncPoint for CurrentNode, otherwise we need to
   /// synchronize on the host with the completion of previous partitions.
   void findRealDeps(std::vector<ur_exp_command_buffer_sync_point_t> &Deps,
-                    node_impl &CurrentNode, int ReferencePartitionNum);
+                    node_impl &CurrentNode, size_t ReferencePartitionNum);
 
   /// Duplicate nodes from the modifiable graph associated with this executable
   /// graph and store them locally. Any subgraph nodes in the modifiable graph
@@ -889,7 +889,7 @@ private:
   std::shared_ptr<sycl::detail::queue_impl> MQueueImpl;
   /// Map of nodes in the exec graph to the partition number to which they
   /// belong.
-  std::unordered_map<node_impl *, int> MPartitionNodes;
+  std::unordered_map<node_impl *, size_t> MPartitionNodes;
   /// Device associated with this executable graph.
   sycl::device MDevice;
   /// Context associated with this executable graph.

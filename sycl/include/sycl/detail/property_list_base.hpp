@@ -133,10 +133,10 @@ protected:
     static const auto ErrorMessage = "The property list contains property "
                                      "unsupported for the current object";
 
-    for (int PropertyKind = 0;
-         PropertyKind < static_cast<int>(MDataLessProps.size());
+    for (size_t PropertyKind = 0; PropertyKind < MDataLessProps.size();
          PropertyKind++) {
-      if (MDataLessProps[PropertyKind] && !FunctionForDataless(PropertyKind))
+      if (MDataLessProps[PropertyKind] &&
+          !FunctionForDataless(static_cast<int>(PropertyKind)))
         throw sycl::exception(ErrorCode, ErrorMessage);
     }
 

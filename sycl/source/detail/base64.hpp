@@ -74,9 +74,9 @@ public:
       decode4(Src + SrcOff, Ch);
 
       // each quad of chars produces three bytes of output
-      Dst[DstOff + 0] = Ch[0] | (Ch[1] << 6);
-      Dst[DstOff + 1] = (Ch[1] >> 2) | (Ch[2] << 4);
-      Dst[DstOff + 2] = (Ch[2] >> 4) | (Ch[3] << 2);
+      Dst[DstOff + 0] = static_cast<byte>(Ch[0] | (Ch[1] << 6));
+      Dst[DstOff + 1] = static_cast<byte>((Ch[1] >> 2) | (Ch[2] << 4));
+      Dst[DstOff + 2] = static_cast<byte>((Ch[2] >> 4) | (Ch[3] << 2));
     }
     auto RemChars = SrcSize - SrcOff;
 
@@ -98,10 +98,10 @@ public:
       throw sycl::exception(
           make_error_code(errc::invalid),
           "Invalid characters in the encoded sequence remainder.");
-    Dst[DstOff++] = Ch0 | (Ch1 << 6);
+    Dst[DstOff++] = static_cast<byte>(Ch0 | (Ch1 << 6));
 
     if (RemChars == 3)
-      Dst[DstOff++] = (Ch1 >> 2) | (Ch2 << 4);
+      Dst[DstOff++] = static_cast<byte>((Ch1 >> 2) | (Ch2 << 4));
     return DstOff;
   }
 

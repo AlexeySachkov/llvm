@@ -59,7 +59,7 @@ void event_impl::waitInternal(bool *Success) {
   if (!MIsHostEvent && Handle) {
     // Wait for the native event
     ur_result_t Err =
-        getAdapter().call_nocheck<UrApiKind::urEventWait>(1, &Handle);
+        getAdapter().call_nocheck<UrApiKind::urEventWait>(1u, &Handle);
     // TODO drop the UR_RESULT_ERROR_UKNOWN from here (this was waiting for
     // https://github.com/oneapi-src/unified-runtime/issues/1459 which is now
     // closed).
@@ -130,9 +130,10 @@ static uint64_t inline getTimestamp(device_impl *Device) {
   } else {
     // Returning host time
     using namespace std::chrono;
-    return duration_cast<nanoseconds>(
-               high_resolution_clock::now().time_since_epoch())
-        .count();
+    return static_cast<uint64_t>(
+        duration_cast<nanoseconds>(
+            high_resolution_clock::now().time_since_epoch())
+            .count());
   }
 }
 
@@ -225,7 +226,8 @@ void *event_impl::instrumentationProlog(std::string &Name, int32_t StreamID,
   void *TraceEvent = nullptr;
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   constexpr uint16_t NotificationTraceType = xpti::trace_wait_begin;
-  if (!xptiCheckTraceEnabled(StreamID, NotificationTraceType))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID),
+                             NotificationTraceType))
     return TraceEvent;
   xpti::trace_event_data_t *WaitEvent = nullptr;
 
@@ -255,8 +257,9 @@ void *event_impl::instrumentationProlog(std::string &Name, int32_t StreamID,
   }
   // Record the current instance ID for use by Epilog
   IId = xptiGetUniqueId();
-  xptiNotifySubscribers(StreamID, NotificationTraceType, nullptr, WaitEvent,
-                        IId, static_cast<const void *>(Name.c_str()));
+  xptiNotifySubscribers(static_cast<uint8_t>(StreamID), NotificationTraceType,
+                        nullptr, WaitEvent, IId,
+                        static_cast<const void *>(Name.c_str()));
   TraceEvent = (void *)WaitEvent;
 #endif
   return TraceEvent;
@@ -267,14 +270,16 @@ void event_impl::instrumentationEpilog(void *TelemetryEvent,
                                        int32_t StreamID, uint64_t IId) const {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   constexpr uint16_t NotificationTraceType = xpti::trace_wait_end;
-  if (!(xptiCheckTraceEnabled(StreamID, NotificationTraceType) &&
+  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID),
+                              NotificationTraceType) &&
         TelemetryEvent))
     return;
   // Close the wait() scope
   xpti::trace_event_data_t *TraceEvent =
       (xpti::trace_event_data_t *)TelemetryEvent;
-  xptiNotifySubscribers(StreamID, NotificationTraceType, nullptr, TraceEvent,
-                        IId, static_cast<const void *>(Name.c_str()));
+  xptiNotifySubscribers(static_cast<uint8_t>(StreamID), NotificationTraceType,
+                        nullptr, TraceEvent, IId,
+                        static_cast<const void *>(Name.c_str()));
 #endif
 }
 
@@ -526,7 +531,7 @@ ur_native_handle_t event_impl::getNative() {
     ur_event_native_properties_t NativeProperties{};
     ur_event_handle_t UREvent = nullptr;
     Adapter.call<UrApiKind::urEventCreateWithNativeHandle>(
-        0, TempContext, &NativeProperties, &UREvent);
+        0u, TempContext, &NativeProperties, &UREvent);
     this->setHandle(UREvent);
     Handle = UREvent;
   }

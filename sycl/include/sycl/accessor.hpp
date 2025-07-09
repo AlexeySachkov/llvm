@@ -683,13 +683,14 @@ protected:
 
     size_t Result = 0;
     detail::loop<Dims>([&, this](size_t I) {
-      Result = Result * getMemoryRange()[I] + Id[I];
+      Result = Result * getMemoryRange()[static_cast<int>(I)] +
+               Id[static_cast<int>(I)];
       // We've already adjusted for the accessor's offset in the __init, so
       // don't include it here in case of device.
 #ifndef __SYCL_DEVICE_ONLY__
       if constexpr (!(PropertyListT::template has_property<
                         sycl::ext::oneapi::property::no_offset>())) {
-        Result += getOffset()[I];
+        Result += getOffset()[static_cast<int>(I)];
       }
 #endif // __SYCL_DEVICE_ONLY__
     });

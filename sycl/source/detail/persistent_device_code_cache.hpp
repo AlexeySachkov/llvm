@@ -139,7 +139,7 @@ private:
     auto Value = SYCLConfig<Config>::get();
     try {
       if (Value)
-        return std::stol(Value);
+        return std::stoul(Value);
     } catch (std::exception const &) {
       PersistentDeviceCodeCache::trace("Invalid value provided, use default " +
                                        std::to_string(Default));

@@ -29,8 +29,13 @@ static inline auto dot_host_impl(T0 x, T1 y) {
     return x * y;
   } else {
     auto R = x[0] * y[0];
-    for (size_t i = 1; i < detail::num_elements<T0>::value; ++i)
-      R += x[i] * y[i];
+    for (detail::index_type_t<T0> i = 1;
+         i <
+         static_cast<detail::index_type_t<T0>>(detail::num_elements<T0>::value);
+         ++i) {
+      auto j = static_cast<detail::index_type_t<T1>>(i);
+      R += x[i] * y[j];
+    }
     return R;
   }
 }

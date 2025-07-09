@@ -34,19 +34,22 @@ inline namespace _V1 {
 
 BUILTIN_GENF(ONE_ARG, acos)
 BUILTIN_GENF(ONE_ARG, acosh)
-BUILTIN_GENF_CUSTOM(ONE_ARG, acospi,
-                    [](auto x) -> decltype(x) { return std::acos(x) / M_PI; })
+BUILTIN_GENF_CUSTOM(ONE_ARG, acospi, [](auto x) -> decltype(x) {
+  return std::acos(x) / static_cast<decltype(x)>(M_PI);
+})
 BUILTIN_GENF(ONE_ARG, asin)
 BUILTIN_GENF(ONE_ARG, asinh)
-BUILTIN_GENF_CUSTOM(ONE_ARG, asinpi,
-                    [](auto x) -> decltype(x) { return std::asin(x) / M_PI; })
+BUILTIN_GENF_CUSTOM(ONE_ARG, asinpi, [](auto x) -> decltype(x) {
+  return std::asin(x) / static_cast<decltype(x)>(M_PI);
+})
 BUILTIN_GENF(ONE_ARG, atan)
 BUILTIN_GENF(ONE_ARG, atanh)
-BUILTIN_GENF_CUSTOM(ONE_ARG, atanpi,
-                    [](auto x) -> decltype(x) { return std::atan(x) / M_PI; })
+BUILTIN_GENF_CUSTOM(ONE_ARG, atanpi, [](auto x) -> decltype(x) {
+  return std::atan(x) / static_cast<decltype(x)>(M_PI);
+})
 BUILTIN_GENF(TWO_ARGS, atan2)
 BUILTIN_GENF_CUSTOM(TWO_ARGS, atan2pi, [](auto x, auto y) -> decltype(x) {
-  return std::atan2(x, y) / M_PI;
+  return std::atan2(x, y) / static_cast<decltype(x)>(M_PI);
 })
 BUILTIN_GENF(ONE_ARG, cbrt)
 BUILTIN_GENF(ONE_ARG, ceil)

@@ -168,7 +168,8 @@ getProgramBinaryData(const ur_program_handle_t &NativePrg,
         });
     assert(DeviceIt != URDevices.end() &&
            "Device is not associated with the program");
-    auto URDeviceIndex = std::distance(URDevices.begin(), DeviceIt);
+    auto URDeviceIndex =
+        static_cast<size_t>(std::distance(URDevices.begin(), DeviceIt));
     Result[DeviceIndex] = std::move(Binaries[URDeviceIndex]);
   }
 
@@ -310,7 +311,7 @@ void PersistentDeviceCodeCache::evictItemsFromCache(
   size_t CurrCacheSize = CacheSize;
   for (const auto &File : FilesWithAccessTime) {
 
-    int pos = File.second.find(CacheEntryAccessTimeSuffix);
+    size_t pos = File.second.find(CacheEntryAccessTimeSuffix);
     const std::string FileNameWOExt = File.second.substr(0, pos);
     const std::string BinFile = FileNameWOExt + ".bin";
     const std::string SrcFile = FileNameWOExt + ".src";
@@ -353,7 +354,8 @@ void PersistentDeviceCodeCache::evictItemsFromCache(
     }
 
     // If the cache size is less than the threshold, break.
-    if (CurrCacheSize <= (size_t)(HowMuchCacheToEvict * MaxCacheSize))
+    if (CurrCacheSize <=
+        (size_t)(HowMuchCacheToEvict * static_cast<float>(MaxCacheSize)))
       break;
   }
 
@@ -768,7 +770,7 @@ void PersistentDeviceCodeCache::writeBinaryDataToFile(
 
   auto Size = Data.size();
   FileStream.write((char *)&Size, sizeof(Size));
-  FileStream.write(Data.data(), Size);
+  FileStream.write(Data.data(), static_cast<std::streamsize>(Size));
   if (FileStream.fail())
     trace("Failed to write to binary file ", FileName);
 }
@@ -798,7 +800,7 @@ PersistentDeviceCodeCache::readBinaryDataFromFile(const std::string &FileName) {
   FileStream.read((char *)&BinarySize, sizeof(BinarySize));
 
   std::vector<char> BinaryData(BinarySize);
-  FileStream.read(BinaryData.data(), BinarySize);
+  FileStream.read(BinaryData.data(), static_cast<std::streamsize>(BinarySize));
   FileStream.close();
 
   if (FileStream.fail()) {
@@ -822,15 +824,17 @@ void PersistentDeviceCodeCache::writeSourceItem(
   std::string DeviceString{getDeviceIDString(Device)};
   size_t Size = DeviceString.size();
   FileStream.write((char *)&Size, sizeof(Size));
-  FileStream.write(DeviceString.data(), Size);
+  FileStream.write(DeviceString.data(), static_cast<std::streamsize>(Size));
 
   Size = BuildOptionsString.size();
   FileStream.write((char *)&Size, sizeof(Size));
-  FileStream.write(BuildOptionsString.data(), Size);
+  FileStream.write(BuildOptionsString.data(),
+                   static_cast<std::streamsize>(Size));
 
   Size = SpecConsts.size();
   FileStream.write((char *)&Size, sizeof(Size));
-  FileStream.write((const char *)SpecConsts.data(), Size);
+  FileStream.write((const char *)SpecConsts.data(),
+                   static_cast<std::streamsize>(Size));
 
   Size = 0;
   for (const RTDeviceBinaryImage *Img : SortedImgs)
@@ -838,7 +842,7 @@ void PersistentDeviceCodeCache::writeSourceItem(
   FileStream.write((char *)&Size, sizeof(Size));
   for (const RTDeviceBinaryImage *Img : SortedImgs)
     FileStream.write((const char *)Img->getRawData().BinaryStart,
-                     Img->getSize());
+                     static_cast<std::streamsize>(Img->getSize()));
   FileStream.close();
 
   if (FileStream.fail()) {
@@ -865,25 +869,25 @@ bool PersistentDeviceCodeCache::isCacheItemSrcEqual(
   size_t Size = 0;
   FileStream.read((char *)&Size, sizeof(Size));
   std::string res(Size, '\0');
-  FileStream.read(&res[0], Size);
+  FileStream.read(&res[0], static_cast<std::streamsize>(Size));
   if (getDeviceIDString(Device).compare(res))
     return false;
 
   FileStream.read((char *)&Size, sizeof(Size));
   res.resize(Size);
-  FileStream.read(&res[0], Size);
+  FileStream.read(&res[0], static_cast<std::streamsize>(Size));
   if (BuildOptionsString.compare(res))
     return false;
 
   FileStream.read((char *)&Size, sizeof(Size));
   res.resize(Size);
-  FileStream.read(&res[0], Size);
+  FileStream.read(&res[0], static_cast<std::streamsize>(Size));
   if (SpecConstsString.compare(res))
     return false;
 
   FileStream.read((char *)&Size, sizeof(Size));
   res.resize(Size);
-  FileStream.read(&res[0], Size);
+  FileStream.read(&res[0], static_cast<std::streamsize>(Size));
   if (ImgsString.compare(res))
     return false;
 

@@ -786,7 +786,7 @@ private:
                     sycl::ext::oneapi::experimental::raw_kernel_arg &&Arg) {
     auto StoredArg = storeRawArg(Arg);
     addArg(detail::kernel_param_kind_t::kind_std_layout, StoredArg,
-           Arg.MArgSize, ArgIndex);
+           static_cast<int>(Arg.MArgSize), ArgIndex);
   }
 
 #ifndef __INTEL_PREVIEW_BREAKING_CHANGES

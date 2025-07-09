@@ -159,10 +159,10 @@ public:
 
 private:
   static unsigned int getCachedValue(bool ResetCache = false) {
-    const auto Parser = []() {
+    const auto Parser = []() -> unsigned {
       const char *ValStr = BaseT::getRawValue();
       int SignedLevel = ValStr ? std::atoi(ValStr) : 0;
-      return SignedLevel >= 0 ? SignedLevel : 0;
+      return SignedLevel >= 0 ? static_cast<unsigned>(SignedLevel) : 0u;
     };
 
     static unsigned int Level = Parser();
@@ -214,13 +214,13 @@ public:
       std::string Params(RoundParams);
       size_t Pos = Params.find(':');
       if (Pos != std::string::npos) {
-        MF = std::stoi(Params.substr(0, Pos));
+        MF = std::stoul(Params.substr(0, Pos));
         Params.erase(0, Pos + 1);
         Pos = Params.find(':');
         if (Pos != std::string::npos) {
-          GF = std::stoi(Params.substr(0, Pos));
+          GF = std::stoul(Params.substr(0, Pos));
           Params.erase(0, Pos + 1);
-          MR = std::stoi(Params);
+          MR = std::stoul(Params);
         }
       }
       ProcessedFactors = true;
@@ -535,12 +535,13 @@ private:
 
       if (DeviceTypeIter->second == info::device_type::all) {
         // Set all configuration values if we got the device-type wildcard.
-        Result.GPU = DeviceConfigValue;
-        Result.CPU = DeviceConfigValue;
-        Result.Accelerator = DeviceConfigValue;
+        Result.GPU = static_cast<size_t>(DeviceConfigValue);
+        Result.CPU = static_cast<size_t>(DeviceConfigValue);
+        Result.Accelerator = static_cast<size_t>(DeviceConfigValue);
       } else {
         // Try setting the corresponding configuration.
-        getRefByDeviceType(Result, DeviceTypeIter->second) = DeviceConfigValue;
+        getRefByDeviceType(Result, DeviceTypeIter->second) =
+            static_cast<size_t>(DeviceConfigValue);
       }
 
       // Move to the start of the next configuration. If the start is outside
@@ -720,9 +721,10 @@ private:
       return intVal;
     };
 
-    static unsigned int Level = Parser();
+    // FIXME: not sure if cast here is a correct approach
+    static unsigned int Level = static_cast<unsigned>(Parser());
     if (ResetCache)
-      Level = Parser();
+      Level = static_cast<unsigned>(Parser());
 
     return Level;
   }
@@ -737,18 +739,18 @@ template <> class SYCLConfig<SYCL_IN_MEM_CACHE_EVICTION_THRESHOLD> {
   using BaseT = SYCLConfigBase<SYCL_IN_MEM_CACHE_EVICTION_THRESHOLD>;
 
 public:
-  static int get() { return getCachedValue(); }
+  static size_t get() { return getCachedValue(); }
   static void reset() { (void)getCachedValue(true); }
 
-  static int getProgramCacheSize() { return getCachedValue(); }
+  static size_t getProgramCacheSize() { return getCachedValue(); }
 
   static bool isProgramCacheEvictionEnabled() {
     return getProgramCacheSize() > 0;
   }
 
 private:
-  static int getCachedValue(bool ResetCache = false) {
-    const auto Parser = []() {
+  static size_t getCachedValue(bool ResetCache = false) {
+    const auto Parser = []() -> size_t {
       const char *ValStr = BaseT::getRawValue();
 
       // Disable eviction by default.
@@ -767,7 +769,7 @@ private:
         throw exception(make_error_code(errc::runtime), Msg);
       }
 
-      return CacheSize;
+      return static_cast<size_t>(CacheSize);
     };
 
     static auto EvictionThresholds = Parser();
@@ -787,23 +789,23 @@ template <> class SYCLConfig<SYCL_CACHE_MAX_SIZE> {
   using BaseT = SYCLConfigBase<SYCL_CACHE_MAX_SIZE>;
 
 public:
-  static long long get() { return getCachedValue(); }
+  static size_t get() { return getCachedValue(); }
   static void reset() { (void)getCachedValue(true); }
 
-  static long long getProgramCacheSize() { return getCachedValue(); }
+  static size_t getProgramCacheSize() { return getCachedValue(); }
 
   static bool isPersistentCacheEvictionEnabled() {
     return getProgramCacheSize() > 0;
   }
 
 private:
-  static long long getCachedValue(bool ResetCache = false) {
-    const auto Parser = []() {
+  static size_t getCachedValue(bool ResetCache = false) {
+    const auto Parser = []() -> size_t {
       const char *ValStr = BaseT::getRawValue();
 
       // Disable eviction by default.
       if (!ValStr)
-        return (long long)0;
+        return 0u;
 
       long long CacheSize = 0;
       try {
@@ -817,7 +819,7 @@ private:
         throw exception(make_error_code(errc::runtime), Msg);
       }
 
-      return CacheSize;
+      return static_cast<size_t>(CacheSize);
     };
 
     static auto EvictionThresholds = Parser();
