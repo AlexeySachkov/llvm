@@ -105,12 +105,7 @@ define_property(GLOBAL PROPERTY SYCL_TOOLCHAIN_INSTALL_COMPONENTS
   FULL_DOCS "List of components to deploy with SYCL toolchain"
 )
 
-# enable all warnings by default
-if (MSVC)
-  set(CMAKE_CXX_FLAGS "/W4 ${CMAKE_CXX_FLAGS}")
-else ()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-endif()
+enable_common_warnings()
 
 if(SYCL_ENABLE_WERROR)
   if(MSVC)

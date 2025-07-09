@@ -49,6 +49,28 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   set(is_msvc TRUE)
 endif()
 
+macro(enable_common_warnings)
+  if(is_gcc
+     OR is_clang
+     OR (is_icpx AND MSVC))
+    add_compile_option_ext("-Wall" WALL)
+    add_compile_option_ext("-Wextra" WEXTRA)
+  elseif(is_icpx)
+    add_compile_option_ext("/Wall" WALL)
+  elseif(is_msvc)
+    add_compile_option_ext("/W4" WALL)
+  endif()
+
+  if(CMAKE_BUILD_TYPE MATCHES "Release")
+    if(is_gcc
+       OR is_clang
+       OR (is_icpx AND MSVC))
+      add_compile_option_ext("-Wconversion" WCONVERSION)
+      add_compile_option_ext("-Wimplicit-fallthrough" WIMPLICITFALLTHROUGH)
+    endif()
+  endif()
+endmacro()
+
 macro(append_common_extra_security_flags)
   # Compiler Warnings and Error Detection
   # Any flags applied here will be applied globally to all LLVM sub-projects.
@@ -66,6 +88,8 @@ macro(append_common_extra_security_flags)
   # The list above may not be complete and it is given for reference in case
   # someone needs to enable more flags. There is also no guarantee that all
   # sub-projects above already use all necessary flags uniformly.
+  # enable_common_warnings macro should be used to apply necessary warning flags
+  # on a per-project basis.
 
   # Control Flow Integrity
   if(is_gcc
