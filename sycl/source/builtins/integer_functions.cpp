@@ -55,7 +55,7 @@ template <typename T> inline T __s_long_mul_hi(T a, T b) {
 
   UT a0b0, a0b1, a1b0, a1b1;
   __get_half_products(absA, absB, a0b0, a0b1, a1b0, a1b1);
-  T result = __get_high_half(a0b0, a0b1, a1b0, a1b1);
+  T result = static_cast<T>(__get_high_half(a0b0, a0b1, a1b0, a1b1));
 
   bool isResultNegative = (a < 0) != (b < 0);
   if (isResultNegative) {
@@ -260,7 +260,9 @@ BUILTIN_GENINT(TWO_ARGS, rotate, [](auto x, auto n) -> decltype(x) {
 
 template <typename T>
 static inline constexpr T __popcount_impl(T x, size_t n = 0) {
-  return (x == T(0)) ? n : __popcount_impl(x >> 1, ((x & T(1)) ? ++n : n));
+  return (x == T(0))
+             ? static_cast<T>(n)
+             : __popcount_impl(static_cast<T>(x >> 1), ((x & T(1)) ? ++n : n));
 }
 template <typename T> static inline constexpr T __popcount(T x) {
   using UT = sycl::detail::make_unsigned_t<T>;

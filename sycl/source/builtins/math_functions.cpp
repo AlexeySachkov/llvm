@@ -36,21 +36,25 @@ inline namespace _V1 {
 BUILTIN_GENF(ONE_ARG, acos)
 BUILTIN_GENF(ONE_ARG, acosh)
 BUILTIN_GENF_CUSTOM(ONE_ARG, acospi, [](auto x) -> decltype(x) {
-  return std::acos(x) / static_cast<decltype(x)>(M_PI);
+  using T = decltype(detail::cast_if_host_half(x));
+  return static_cast<T>(std::acos(x) / M_PI);
 })
 BUILTIN_GENF(ONE_ARG, asin)
 BUILTIN_GENF(ONE_ARG, asinh)
 BUILTIN_GENF_CUSTOM(ONE_ARG, asinpi, [](auto x) -> decltype(x) {
-  return std::asin(x) / static_cast<decltype(x)>(M_PI);
+  using T = decltype(detail::cast_if_host_half(x));
+  return static_cast<T>(std::asin(x) / M_PI);
 })
 BUILTIN_GENF(ONE_ARG, atan)
 BUILTIN_GENF(ONE_ARG, atanh)
 BUILTIN_GENF_CUSTOM(ONE_ARG, atanpi, [](auto x) -> decltype(x) {
-  return std::atan(x) / static_cast<decltype(x)>(M_PI);
+  using T = decltype(detail::cast_if_host_half(x));
+  return static_cast<T>(std::atan(x) / M_PI);
 })
 BUILTIN_GENF(TWO_ARGS, atan2)
 BUILTIN_GENF_CUSTOM(TWO_ARGS, atan2pi, [](auto x, auto y) -> decltype(x) {
-  return std::atan2(x, y) / static_cast<decltype(x)>(M_PI);
+  using T = decltype(detail::cast_if_host_half(x));
+  return static_cast<T>(std::atan2(x, y) / M_PI);
 })
 BUILTIN_GENF(ONE_ARG, cbrt)
 BUILTIN_GENF(ONE_ARG, ceil)
@@ -58,14 +62,17 @@ BUILTIN_GENF(TWO_ARGS, copysign)
 BUILTIN_GENF(ONE_ARG, cos)
 BUILTIN_GENF(ONE_ARG, cosh)
 BUILTIN_GENF_CUSTOM(ONE_ARG, cospi, [](auto x) -> decltype(x) {
-  return std::sin(M_PI * (0.5 - x));
+  using T = decltype(detail::cast_if_host_half(x));
+  return static_cast<T>(std::sin(M_PI * (0.5 - x)));
 })
 BUILTIN_GENF(ONE_ARG, erf)
 BUILTIN_GENF(ONE_ARG, erfc)
 BUILTIN_GENF(ONE_ARG, exp)
 BUILTIN_GENF(ONE_ARG, exp2)
-BUILTIN_GENF_CUSTOM(ONE_ARG, exp10,
-                    [](auto x) -> decltype(x) { return std::pow(10, x); })
+BUILTIN_GENF_CUSTOM(ONE_ARG, exp10, [](auto x) -> decltype(x) {
+  using T = decltype(detail::cast_if_host_half(x));
+  return static_cast<T>(std::pow(10, x));
+})
 BUILTIN_GENF(ONE_ARG, expm1)
 BUILTIN_GENF(ONE_ARG, fabs)
 BUILTIN_GENF(TWO_ARGS, fdim)
@@ -111,17 +118,20 @@ BUILTIN_GENF_CUSTOM(ONE_ARG, rsqrt, [](auto x) -> decltype(x) {
 })
 BUILTIN_GENF(ONE_ARG, sin)
 BUILTIN_GENF(ONE_ARG, sinh)
-BUILTIN_GENF_CUSTOM(ONE_ARG, sinpi,
-                    [](auto x) -> decltype(x) { return std::sin(M_PI * x); })
+BUILTIN_GENF_CUSTOM(ONE_ARG, sinpi, [](auto x) -> decltype(x) {
+  using T = decltype(detail::cast_if_host_half(x));
+  return static_cast<T>(std::sin(M_PI * x));
+})
 BUILTIN_GENF(ONE_ARG, sqrt)
 BUILTIN_GENF(ONE_ARG, tan)
 BUILTIN_GENF(ONE_ARG, tanh)
 BUILTIN_GENF_CUSTOM(
     ONE_ARG, tanpi,
     [](auto x) -> decltype(x) { // For uniformity, place in range [0.0, 1.0).
+      using T = decltype(detail::cast_if_host_half(x));
       double y = x - std::floor(x);
       // Flip for better accuracy.
-      return 1.0 / std::tan((0.5 - y) * M_PI);
+      return static_cast<T>(1.0 / std::tan((0.5 - y) * M_PI));
     })
 BUILTIN_GENF(ONE_ARG, tgamma)
 BUILTIN_GENF(ONE_ARG, trunc)
@@ -217,9 +227,15 @@ __SYCL_EXPORT half sincos_impl(half x, half *p) { return __sincos(x, p); }
   HOST_IMPL(NAME, NAME /* delegate to scalar */)                               \
   FOR_EACH1(EXPORT_VEC_LAST_INT_1_16, NAME, FP_TYPES)
 
-BUILTIN_MATH_LAST_INT(pown, std::pow)
-BUILTIN_MATH_LAST_INT(rootn, [](auto x, auto y) -> decltype(x) {
-  return std::pow(x, static_cast<decltype(x)>(1) / static_cast<decltype(x)>(y));
+BUILTIN_MATH_LAST_INT(pown, [](auto x, int y) -> decltype(x) {
+  using T = decltype(detail::cast_if_host_half(x));
+  return static_cast<decltype(x)>(
+      std::pow(detail::cast_if_host_half(x), static_cast<T>(y)));
+})
+BUILTIN_MATH_LAST_INT(rootn, [](auto x, int y) -> decltype(x) {
+  using T = decltype(detail::cast_if_host_half(x));
+  return static_cast<decltype(x)>(
+      std::pow(detail::cast_if_host_half(x), static_cast<T>(1.0 / y)));
 })
 BUILTIN_MATH_LAST_INT(ldexp, std::ldexp)
 

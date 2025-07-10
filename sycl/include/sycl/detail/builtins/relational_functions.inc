@@ -286,7 +286,8 @@ select(T0 a, T1 b, T2 c) {
     return ret;
   } else {
     detail::simplify_if_swizzle_t<T0> ret;
-    for (detail::index_type_t<T2> i = 0; i < ret.size(); ++i) {
+    using TI = detail::index_type_t<T2>;
+    for (TI i = 0; i < static_cast<TI>(ret.size()); ++i) {
       auto j = static_cast<detail::index_type_t<T1>>(i);
       auto k = static_cast<detail::index_type_t<T0>>(i);
       ret[i] = (detail::msbIsSet(c[i]) ? b[j] : a[k]);
