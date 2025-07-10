@@ -13,6 +13,7 @@
 #define _USE_MATH_DEFINES
 
 #include <cmath>
+#include <type_traits>
 
 #include <sycl/detail/builtins/builtins.hpp>
 
@@ -218,7 +219,7 @@ __SYCL_EXPORT half sincos_impl(half x, half *p) { return __sincos(x, p); }
 
 BUILTIN_MATH_LAST_INT(pown, std::pow)
 BUILTIN_MATH_LAST_INT(rootn, [](auto x, auto y) -> decltype(x) {
-  return std::pow(x, decltype(x){1} / y);
+  return std::pow(x, static_cast<decltype(x)>(1) / static_cast<decltype(x)>(y));
 })
 BUILTIN_MATH_LAST_INT(ldexp, std::ldexp)
 

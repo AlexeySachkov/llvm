@@ -1709,7 +1709,7 @@ void exec_graph_impl::populateURKernelUpdateStructs(
   UpdateDesc.pNewGlobalWorkOffset = &NDRDesc.GlobalOffset[0];
   UpdateDesc.pNewGlobalWorkSize = &NDRDesc.GlobalSize[0];
   UpdateDesc.pNewLocalWorkSize = LocalSize;
-  UpdateDesc.newWorkDim = NDRDesc.Dims;
+  UpdateDesc.newWorkDim = static_cast<uint32_t>(NDRDesc.Dims);
 
   // Query the ID cache to find the equivalent exec node for the node passed to
   // this function.

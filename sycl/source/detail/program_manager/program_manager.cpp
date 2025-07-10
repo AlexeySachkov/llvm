@@ -1343,12 +1343,12 @@ static const char *getDeviceLibExtensionStr(DeviceLibExt Extension) {
 }
 
 static ur_result_t doCompile(adapter_impl &Adapter, ur_program_handle_t Program,
-                             uint32_t NumDevs, ur_device_handle_t *Devs,
+                             size_t NumDevs, ur_device_handle_t *Devs,
                              ur_context_handle_t Ctx, const char *Opts) {
   // Try to compile with given devices, fall back to compiling with the program
   // context if unsupported by the adapter
   auto Result = Adapter.call_nocheck<UrApiKind::urProgramCompileExp>(
-      Program, static_cast<uin32_t>(NumDevs), Devs, Opts);
+      Program, static_cast<uint32_t>(NumDevs), Devs, Opts);
   if (Result == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
     return Adapter.call_nocheck<UrApiKind::urProgramCompile>(Ctx, Program,
                                                              Opts);
@@ -3012,9 +3012,9 @@ ProgramManager::link(const std::vector<device_image_plain> &Imgs,
   ur_program_handle_t LinkedProg = nullptr;
   auto doLink = [&] {
     auto Res = Adapter.call_nocheck<UrApiKind::urProgramLinkExp>(
-        ContextImpl.getHandleRef(), URDevices.size(), URDevices.data(),
-        URPrograms.size(), URPrograms.data(), LinkOptionsStr.c_str(),
-        &LinkedProg);
+        ContextImpl.getHandleRef(), static_cast<uint32_t>(URDevices.size()),
+        URDevices.data(), static_cast<uint32_t>(URPrograms.size()),
+        URPrograms.data(), LinkOptionsStr.c_str(), &LinkedProg);
     if (Res == UR_RESULT_ERROR_UNSUPPORTED_FEATURE) {
       Res = Adapter.call_nocheck<UrApiKind::urProgramLink>(
           ContextImpl.getHandleRef(), static_cast<uint32_t>(URPrograms.size()),
@@ -3759,24 +3759,25 @@ checkDevSupportDeviceRequirements(const device_impl &Dev,
     for (size_t i = 0; i < Dims; i++) {
       // Extracting value from std::variant to avoid dealing with type-safety
       // issues after that
+      auto Index = static_cast<int>(Dims - i - 1);
       if (Dims == 1) {
         // ReqdWGSizeVec is in reverse order compared to MaxWorkItemSizes
         if (ReqdWGSizeVec[i] >
-            std::get<id<1>>(MaxWorkItemSizesVariant)[Dims - i - 1u])
+            std::get<id<1>>(MaxWorkItemSizesVariant)[Index])
           return sycl::exception(sycl::errc::kernel_not_supported,
                                  "Required work-group size " +
                                      std::to_string(ReqdWGSizeVec[i]) +
                                      " is not supported");
       } else if (Dims == 2) {
         if (ReqdWGSizeVec[i] >
-            std::get<id<2>>(MaxWorkItemSizesVariant)[Dims - i - 1u])
+            std::get<id<2>>(MaxWorkItemSizesVariant)[Index])
           return sycl::exception(sycl::errc::kernel_not_supported,
                                  "Required work-group size " +
                                      std::to_string(ReqdWGSizeVec[i]) +
                                      " is not supported");
       } else // (Dims == 3)
         if (ReqdWGSizeVec[i] >
-            std::get<id<3>>(MaxWorkItemSizesVariant)[Dims - i - 1u])
+            std::get<id<3>>(MaxWorkItemSizesVariant)[Index])
           return sycl::exception(sycl::errc::kernel_not_supported,
                                  "Required work-group size " +
                                      std::to_string(ReqdWGSizeVec[i]) +

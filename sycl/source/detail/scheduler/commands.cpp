@@ -366,8 +366,8 @@ class DispatchHostTask {
       if (RawEvents.size() == 0)
         continue;
       try {
-        AdapterWithEvents.first->call<UrApiKind::urEventWait>(RawEvents.size(),
-                                                              RawEvents.data());
+        AdapterWithEvents.first->call<UrApiKind::urEventWait>(
+            static_cast<uint32_t>(RawEvents.size()), RawEvents.data());
       } catch (const sycl::exception &) {
         MThisCmd->MEvent->getSubmittedQueue()->reportAsyncException(
             std::current_exception());
@@ -453,7 +453,8 @@ public:
           // devices in the same context for CUDA and HIP backends
           Queue->getAdapter().call<UrApiKind::urEnqueueNativeCommandExp>(
               HostTask.MQueue->getHandleRef(), InteropFreeFunc, &CustomOpData,
-              MReqUrMem.size(), MReqUrMem.data(), nullptr, 0u, nullptr, nullptr);
+              static_cast<uint32_t>(MReqUrMem.size()), MReqUrMem.data(),
+              nullptr, 0u, nullptr, nullptr);
         } else {
           HostTask.MHostTask->call(MThisCmd->MEvent->getHostProfilingInfo(),
                                    IH);
@@ -544,7 +545,7 @@ void Command::waitForEvents(queue_impl *Queue,
             getUrEvents(CtxWithEvents.second);
         if (!RawEvents.empty()) {
           CtxWithEvents.first->getAdapter().call<UrApiKind::urEventWait>(
-              RawEvents.size(), RawEvents.data());
+              static_cast<uint32_t>(RawEvents.size()), RawEvents.data());
         }
       }
     } else {
@@ -553,7 +554,8 @@ void Command::waitForEvents(queue_impl *Queue,
       adapter_impl &Adapter = Queue->getAdapter();
 
       Adapter.call<UrApiKind::urEnqueueEventsWait>(
-          Queue->getHandleRef(), RawEvents.size(), &RawEvents[0], &Event);
+          Queue->getHandleRef(), static_cast<uint32_t>(RawEvents.size()),
+          &RawEvents[0], &Event);
     }
   }
 }
@@ -2006,8 +2008,9 @@ void instrumentationAddExtraKernelMetadata(
 {
   std::vector<ArgDesc> Args;
 
-  auto FilterArgs = [&Args](detail::ArgDesc &Arg, int NextTrueIndex) {
-    Args.push_back({Arg.MType, Arg.MPtr, Arg.MSize, NextTrueIndex});
+  auto FilterArgs = [&Args](detail::ArgDesc &Arg, size_t NextTrueIndex) {
+    Args.push_back(
+        {Arg.MType, Arg.MPtr, Arg.MSize, static_cast<int>(NextTrueIndex)});
   };
   const KernelArgMask *EliminatedArgMask = nullptr;
 
@@ -2170,7 +2173,7 @@ std::pair<xpti_td *, uint64_t> emitKernelInstrumentationData(
 void ExecCGCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   constexpr uint16_t NotificationTraceType = xpti::trace_node_create;
-  if (!xptiCheckTraceEnabled(MStreamID))
+  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
     return;
 
   std::string KernelName;
@@ -2357,10 +2360,12 @@ static void SetArgBasedOnType(
   case kernel_param_kind_t::kind_std_layout: {
     if (Arg.MPtr) {
       Adapter.call<UrApiKind::urKernelSetArgValue>(
-          Kernel, NextTrueIndex, Arg.MSize, nullptr, Arg.MPtr);
+          Kernel, static_cast<uint32_t>(NextTrueIndex),
+          static_cast<size_t>(Arg.MSize), nullptr, Arg.MPtr);
     } else {
       Adapter.call<UrApiKind::urKernelSetArgLocal>(
-          Kernel, static_cast<uint32_t>(NextTrueIndex), Arg.MSize, nullptr);
+          Kernel, static_cast<uint32_t>(NextTrueIndex),
+          static_cast<size_t>(Arg.MSize), nullptr);
     }
 
     break;
@@ -2392,7 +2397,8 @@ static void SetArgBasedOnType(
     MemObjProps.stype = UR_STRUCTURE_TYPE_KERNEL_ARG_MEM_OBJ_PROPERTIES;
     MemObjProps.memoryAccess = UR_MEM_FLAG_READ_ONLY;
     Adapter.call<UrApiKind::urKernelSetArgMemObj>(
-        Kernel, NextTrueIndex, &MemObjProps, SpecConstsBuffer);
+        Kernel, static_cast<uint32_t>(NextTrueIndex), &MemObjProps,
+        SpecConstsBuffer);
     break;
   }
   case kernel_param_kind_t::kind_invalid:
@@ -2434,7 +2440,7 @@ static ur_result_t SetKernelParamsAndLaunch(
       const void *ArgPtr = (const char *)KernelFuncPtr + ParamDesc.offset;
       switch (ParamDesc.kind) {
       case kernel_param_kind_t::kind_std_layout: {
-        int Size = ParamDesc.info;
+        auto Size = static_cast<size_t>(ParamDesc.info);
         Adapter.call<UrApiKind::urKernelSetArgValue>(
             Kernel, static_cast<uint32_t>(NextTrueIndex), Size, nullptr,
             ArgPtr);
@@ -2471,7 +2477,8 @@ static ur_result_t SetKernelParamsAndLaunch(
   // this indicates the buffer is actually unused and was elided.
   if (ImplicitLocalArg.has_value() && ImplicitLocalArg.value() != -1) {
     Adapter.call<UrApiKind::urKernelSetArgLocal>(
-        Kernel, ImplicitLocalArg.value(), WorkGroupMemorySize, nullptr);
+        Kernel, static_cast<uint32_t>(ImplicitLocalArg.value()),
+        WorkGroupMemorySize, nullptr);
   }
 
   adjustNDRangePerKernel(NDRDesc, Kernel, Queue.getDeviceImpl());
@@ -2530,10 +2537,11 @@ static ur_result_t SetKernelParamsAndLaunch(
   }
   ur_event_handle_t UREvent = nullptr;
   ur_result_t Error = Adapter.call_nocheck<UrApiKind::urEnqueueKernelLaunch>(
-      Queue.getHandleRef(), Kernel, NDRDesc.Dims,
+      Queue.getHandleRef(), Kernel, static_cast<uint32_t>(NDRDesc.Dims),
       HasOffset ? &NDRDesc.GlobalOffset[0] : nullptr, &NDRDesc.GlobalSize[0],
-      LocalSize, property_list.size(),
-      property_list.empty() ? nullptr : property_list.data(), RawEvents.size(),
+      LocalSize, static_cast<uint32_t>(property_list.size()),
+      property_list.empty() ? nullptr : property_list.data(),
+      static_cast<uint32_t>(RawEvents.size()),
       RawEvents.empty() ? nullptr : &RawEvents[0],
       OutEventImpl ? &UREvent : nullptr);
   if (Error == UR_RESULT_SUCCESS && OutEventImpl) {
@@ -2665,11 +2673,13 @@ ur_result_t enqueueImpCommandBufferKernel(
 
   ur_result_t Res =
       Adapter.call_nocheck<UrApiKind::urCommandBufferAppendKernelLaunchExp>(
-          CommandBuffer, UrKernel, NDRDesc.Dims, &NDRDesc.GlobalOffset[0],
-          &NDRDesc.GlobalSize[0], LocalSize, AltUrKernels.size(),
+          CommandBuffer, UrKernel, static_cast<uint32_t>(NDRDesc.Dims),
+          &NDRDesc.GlobalOffset[0], &NDRDesc.GlobalSize[0], LocalSize,
+          static_cast<uint32_t>(AltUrKernels.size()),
           AltUrKernels.size() ? AltUrKernels.data() : nullptr,
-          SyncPoints.size(), SyncPoints.size() ? SyncPoints.data() : nullptr,
-          0u, nullptr, OutSyncPoint, nullptr,
+          static_cast<uint32_t>(SyncPoints.size()),
+          SyncPoints.size() ? SyncPoints.data() : nullptr, 0u, nullptr,
+          OutSyncPoint, nullptr,
           CommandBufferDesc.isUpdatable ? OutCommand : nullptr);
 
   if (Res != UR_RESULT_SUCCESS) {
@@ -2777,9 +2787,10 @@ void enqueueImpKernel(
     Error = SetKernelParamsAndLaunch(
         Queue, Args, DeviceImageImpl, Kernel, NDRDesc, EventsWaitList,
         OutEventImpl, EliminatedArgMask, getMemAllocationFunc,
-        KernelIsCooperative, KernelUsesClusterLaunch, WorkGroupMemorySize,
-        BinImage, KernelName, KernelNameBasedCachePtr, KernelFuncPtr,
-        KernelNumArgs, KernelParamDescGetter, KernelHasSpecialCaptures);
+        KernelIsCooperative, KernelUsesClusterLaunch,
+        static_cast<uint32_t>(WorkGroupMemorySize), BinImage, KernelName,
+        KernelNameBasedCachePtr, KernelFuncPtr, KernelNumArgs,
+        KernelParamDescGetter, KernelHasSpecialCaptures);
   }
   if (UR_RESULT_SUCCESS != Error) {
     // If we have got non-success error code, let's analyze it to emit nice
@@ -2824,11 +2835,13 @@ ur_result_t enqueueReadWriteHostPipe(queue_impl &Queue,
   auto OutEvent = OutEventImpl ? &UREvent : nullptr;
   if (read) {
     Error = Adapter.call_nocheck<UrApiKind::urEnqueueReadHostPipe>(
-        ur_q, Program, PipeName.c_str(), blocking, ptr, size, RawEvents.size(),
+        ur_q, Program, PipeName.c_str(), blocking, ptr, size,
+        static_cast<uint32_t>(RawEvents.size()),
         RawEvents.empty() ? nullptr : &RawEvents[0], OutEvent);
   } else {
     Error = Adapter.call_nocheck<UrApiKind::urEnqueueWriteHostPipe>(
-        ur_q, Program, PipeName.c_str(), blocking, ptr, size, RawEvents.size(),
+        ur_q, Program, PipeName.c_str(), blocking, ptr, size,
+        static_cast<uint32_t>(RawEvents.size()),
         RawEvents.empty() ? nullptr : &RawEvents[0], OutEvent);
   }
   if (Error == UR_RESULT_SUCCESS && OutEventImpl) {
@@ -2861,8 +2874,8 @@ ur_result_t ExecCGCommand::enqueueImpCommandBuffer() {
   flushCrossQueueDeps(EventImpls);
   std::vector<ur_event_handle_t> RawEvents = getUrEvents(EventImpls);
   if (!RawEvents.empty()) {
-    MQueue->getAdapter().call<UrApiKind::urEventWait>(RawEvents.size(),
-                                                      &RawEvents[0]);
+    MQueue->getAdapter().call<UrApiKind::urEventWait>(
+        static_cast<uint32_t>(RawEvents.size()), &RawEvents[0]);
   }
 
   ur_exp_command_buffer_sync_point_t OutSyncPoint{};
@@ -3098,7 +3111,7 @@ ur_result_t ExecCGCommand::enqueueImpCommandBuffer() {
 
     Adapter.call<UrApiKind::urCommandBufferAppendNativeCommandExp>(
         MCommandBuffer, CommandBufferInteropFreeFunc, &CustomOpData,
-        ChildCommandBuffer, MSyncPointDeps.size(),
+        ChildCommandBuffer, static_cast<uint32_t>(MSyncPointDeps.size()),
         MSyncPointDeps.empty() ? nullptr : MSyncPointDeps.data(),
         &OutSyncPoint);
 
@@ -3502,8 +3515,9 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
     if (auto Result =
             Adapter.call_nocheck<UrApiKind::urEnqueueNativeCommandExp>(
                 MQueue->getHandleRef(), InteropFreeFunc, &CustomOpData,
-                ReqMems.size(), ReqMems.data(), nullptr, RawEvents.size(),
-                RawEvents.data(), Event);
+                static_cast<uint32_t>(ReqMems.size()), ReqMems.data(), nullptr,
+                static_cast<uint32_t>(RawEvents.size()), RawEvents.data(),
+                Event);
         Result != UR_RESULT_SUCCESS)
       return Result;
 
@@ -3532,7 +3546,8 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
     // submitted immediately after and should synchronize it internally.
     if (RawEvents.size()) {
       auto Result = Adapter.call_nocheck<UrApiKind::urEnqueueEventsWait>(
-          MQueue->getHandleRef(), RawEvents.size(), &RawEvents[0], nullptr);
+          MQueue->getHandleRef(), static_cast<uint32_t>(RawEvents.size()),
+          &RawEvents[0], nullptr);
       if (Result != UR_RESULT_SUCCESS)
         return Result;
     }
@@ -3576,8 +3591,8 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
 
     if (auto Result =
             Adapter.call_nocheck<UrApiKind::urEnqueueEventsWaitWithBarrierExt>(
-                MQueue->getHandleRef(), &Properties, UrEvents.size(),
-                &UrEvents[0], Event);
+                MQueue->getHandleRef(), &Properties,
+                static_cast<uint32_t>(UrEvents.size()), &UrEvents[0], Event);
         Result != UR_RESULT_SUCCESS)
       return Result;
 
@@ -3590,7 +3605,7 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
 
     bool IsInOrderQueue = MQueue->isInOrder();
     ur_event_handle_t *TimestampDeps = nullptr;
-    size_t NumTimestampDeps = 0;
+    uint32_t NumTimestampDeps = 0;
 
     // TO DO - once the following WA removed: to change call to call_nocheck and
     // return operation result to Command::enqueue (see other CG types). Set
@@ -3684,7 +3699,7 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
             MQueue->getAdapter()
                 .call_nocheck<UrApiKind::urEnqueueCommandBufferExp>(
                     MQueue->getHandleRef(), CmdBufferCG->MCommandBuffer,
-                    RawEvents.size(),
+                    static_cast<uint32_t>(RawEvents.size()),
                     RawEvents.empty() ? nullptr : &RawEvents[0], Event);
         Result != UR_RESULT_SUCCESS)
       return Result;
@@ -3757,8 +3772,9 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
 
     if (auto Result =
             Adapter.call_nocheck<sycl::detail::UrApiKind::urEnqueueUSMFreeExp>(
-                MQueue->getHandleRef(), nullptr, ptr, RawEvents.size(),
-                RawEvents.data(), Event);
+                MQueue->getHandleRef(), nullptr, ptr,
+                static_cast<uint32_t>(RawEvents.size()), RawEvents.data(),
+                Event);
         Result != UR_RESULT_SUCCESS)
       return Result;
 
@@ -3777,7 +3793,7 @@ ur_result_t ExecCGCommand::enqueueImpQueue() {
     detail::adapter_impl &Adapter = MQueue->getAdapter();
     ur_event_handle_t Event;
     if (auto Result = Adapter.call_nocheck<UrApiKind::urEnqueueEventsWait>(
-            MQueue->getHandleRef(), RawEvents.size(),
+            MQueue->getHandleRef(), static_cast<uint32_t>(RawEvents.size()),
             RawEvents.size() ? &RawEvents[0] : nullptr, &Event);
         Result != UR_RESULT_SUCCESS)
       return Result;

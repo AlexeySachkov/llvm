@@ -230,7 +230,9 @@ template <typename T> static inline constexpr T __clz_impl(T x, T m, T n = 0) {
 template <typename T> static inline constexpr T __clz(T x) {
   using UT = std::make_unsigned_t<T>;
   return (x == T(0)) ? sizeof(T) * 8
-                     : __clz_impl<UT>(x, sycl::detail::msbMask<UT>(x));
+                     : static_cast<T>(__clz_impl(
+                           static_cast<UT>(x),
+                           sycl::detail::msbMask(static_cast<UT>(x))));
 }
 BUILTIN_GENINT(ONE_ARG, clz, __clz)
 
@@ -240,7 +242,8 @@ template <typename T> static inline constexpr T __ctz_impl(T x, T m, T n = 0) {
 
 template <typename T> static inline constexpr T __ctz(T x) {
   using UT = std::make_unsigned_t<T>;
-  return (x == T(0)) ? sizeof(T) * 8 : __ctz_impl<UT>(x, 1);
+  return (x == T(0)) ? sizeof(T) * 8
+                     : static_cast<T>(__ctz_impl(static_cast<UT>(x), UT{1}));
 }
 BUILTIN_GENINT(ONE_ARG, ctz, __ctz)
 
@@ -252,7 +255,7 @@ BUILTIN_GENINT(TWO_ARGS, rotate, [](auto x, auto n) -> decltype(x) {
   constexpr UT size = sizeof(x) * 8;
   UT xu = UT(x);
   UT nu = UT(n) & (size - 1);
-  return (xu << nu) | (xu >> (size - nu));
+  return static_cast<decltype(x)>((xu << nu) | (xu >> (size - nu)));
 })
 
 template <typename T>
@@ -261,7 +264,7 @@ static inline constexpr T __popcount_impl(T x, size_t n = 0) {
 }
 template <typename T> static inline constexpr T __popcount(T x) {
   using UT = sycl::detail::make_unsigned_t<T>;
-  return __popcount_impl(UT(x));
+  return static_cast<T>(__popcount_impl(UT(x)));
 }
 BUILTIN_GENINT(ONE_ARG, popcount, __popcount)
 } // namespace _V1
