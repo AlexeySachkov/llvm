@@ -282,7 +282,7 @@ Command::getUrEventsBlocking(const std::vector<EventImplPtr> &EventImpls,
     // they don't have an associated queue and command.
     if (!EventImpl->isInterop() && !EventImpl->isEnqueued()) {
       if (!EventImpl->getCommand() ||
-          !static_cast<Command *>(EventImpl->getCommand())->producesPiEvent())
+          !EventImpl->getCommand()->producesPiEvent())
         continue;
       std::vector<Command *> AuxCmds;
       Scheduler::getInstance().enqueueCommandForCG(EventImpl, AuxCmds,
@@ -768,7 +768,7 @@ Command *Command::processDepEvent(EventImplPtr DepEvent, const DepDesc &Dep,
   // distinction since the command might still be unenqueued at this point.
   bool PiEventExpected =
       (!DepEvent->isHost() && !DepEvent->isDefaultConstructed());
-  if (auto *DepCmd = static_cast<Command *>(DepEvent->getCommand()))
+  if (auto *DepCmd = DepEvent->getCommand())
     PiEventExpected &= DepCmd->producesPiEvent();
 
   if (!PiEventExpected) {
@@ -837,7 +837,7 @@ Command *Command::addDep(EventImplPtr Event,
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   // We need this for just the instrumentation, so guarding it will prevent
   // unused variable warnings when instrumentation is turned off
-  Command *Cmd = (Command *)Event->getCommand();
+  Command *Cmd = Event->getCommand();
   ur_event_handle_t UrEventAddr = Event->getHandle();
   // Now make an edge for the dependent event
   emitEdgeEventForEventDependence(Cmd, UrEventAddr);
@@ -1031,12 +1031,12 @@ void Command::copySubmissionCodeLocation() {
 }
 
 AllocaCommandBase::AllocaCommandBase(CommandType Type, queue_impl *Queue,
-                                     Requirement Req,
+                                     const Requirement &Req,
                                      AllocaCommandBase *LinkedAllocaCmd,
                                      bool IsConst)
     : Command(Type, Queue), MLinkedAllocaCmd(LinkedAllocaCmd),
       MIsLeaderAlloca(nullptr == LinkedAllocaCmd), MIsConst(IsConst),
-      MRequirement(std::move(Req)), MReleaseCmd(Queue, this) {
+      MRequirement(Req), MReleaseCmd(Queue, this) {
   MRequirement.MAccessMode = access::mode::read_write;
   emitInstrumentationDataProxy();
 }
@@ -1073,11 +1073,11 @@ bool AllocaCommandBase::supportsPostEnqueueCleanup() const { return false; }
 
 bool AllocaCommandBase::readyForCleanup() const { return false; }
 
-AllocaCommand::AllocaCommand(queue_impl *Queue, Requirement Req,
+AllocaCommand::AllocaCommand(queue_impl *Queue, const Requirement &Req,
                              bool InitFromUserData,
                              AllocaCommandBase *LinkedAllocaCmd, bool IsConst)
-    : AllocaCommandBase(CommandType::ALLOCA, Queue, std::move(Req),
-                        LinkedAllocaCmd, IsConst),
+    : AllocaCommandBase(CommandType::ALLOCA, Queue, Req, LinkedAllocaCmd,
+                        IsConst),
       MInitFromUserData(InitFromUserData) {
   // Node event must be created before the dependent edge is added to this
   // node, so this call must be before the addDep() call.
@@ -1151,11 +1151,12 @@ void AllocaCommand::printDot(std::ostream &Stream) const {
   }
 }
 
-AllocaSubBufCommand::AllocaSubBufCommand(queue_impl *Queue, Requirement Req,
+AllocaSubBufCommand::AllocaSubBufCommand(queue_impl *Queue,
+                                         const Requirement &Req,
                                          AllocaCommandBase *ParentAlloca,
                                          std::vector<Command *> &ToEnqueue,
                                          std::vector<Command *> &ToCleanUp)
-    : AllocaCommandBase(CommandType::ALLOCA_SUB_BUF, Queue, std::move(Req),
+    : AllocaCommandBase(CommandType::ALLOCA_SUB_BUF, Queue, Req,
                         /*LinkedAllocaCmd*/ nullptr, /*IsConst*/ false),
       MParentAlloca(ParentAlloca) {
   // Node event must be created before the dependent edge
@@ -1360,11 +1361,11 @@ bool ReleaseCommand::supportsPostEnqueueCleanup() const { return false; }
 
 bool ReleaseCommand::readyForCleanup() const { return false; }
 
-MapMemObject::MapMemObject(AllocaCommandBase *SrcAllocaCmd, Requirement Req,
-                           void **DstPtr, queue_impl *Queue,
-                           access::mode MapMode)
+MapMemObject::MapMemObject(AllocaCommandBase *SrcAllocaCmd,
+                           const Requirement &Req, void **DstPtr,
+                           queue_impl *Queue, access::mode MapMode)
     : Command(CommandType::MAP_MEM_OBJ, Queue), MSrcAllocaCmd(SrcAllocaCmd),
-      MSrcReq(std::move(Req)), MDstPtr(DstPtr), MMapMode(MapMode) {
+      MSrcReq(Req), MDstPtr(DstPtr), MMapMode(MapMode) {
   emitInstrumentationDataProxy();
 }
 
@@ -1423,10 +1424,11 @@ void MapMemObject::printDot(std::ostream &Stream) const {
   }
 }
 
-UnMapMemObject::UnMapMemObject(AllocaCommandBase *DstAllocaCmd, Requirement Req,
-                               void **SrcPtr, queue_impl *Queue)
+UnMapMemObject::UnMapMemObject(AllocaCommandBase *DstAllocaCmd,
+                               const Requirement &Req, void **SrcPtr,
+                               queue_impl *Queue)
     : Command(CommandType::UNMAP_MEM_OBJ, Queue), MDstAllocaCmd(DstAllocaCmd),
-      MDstReq(std::move(Req)), MSrcPtr(SrcPtr) {
+      MDstReq(Req), MSrcPtr(SrcPtr) {
   emitInstrumentationDataProxy();
 }
 
@@ -1506,9 +1508,9 @@ void UnMapMemObject::printDot(std::ostream &Stream) const {
   }
 }
 
-MemCpyCommand::MemCpyCommand(Requirement SrcReq,
+MemCpyCommand::MemCpyCommand(const Requirement &SrcReq,
                              AllocaCommandBase *SrcAllocaCmd,
-                             Requirement DstReq,
+                             const Requirement &DstReq,
                              AllocaCommandBase *DstAllocaCmd,
                              queue_impl *SrcQueue, queue_impl *DstQueue)
     : Command(CommandType::COPY_MEMORY, DstQueue),
@@ -1680,14 +1682,14 @@ void UpdateHostRequirementCommand::printDot(std::ostream &Stream) const {
   }
 }
 
-MemCpyCommandHost::MemCpyCommandHost(Requirement SrcReq,
+MemCpyCommandHost::MemCpyCommandHost(const Requirement &SrcReq,
                                      AllocaCommandBase *SrcAllocaCmd,
-                                     Requirement DstReq, void **DstPtr,
+                                     const Requirement &DstReq, void **DstPtr,
                                      queue_impl *SrcQueue, queue_impl *DstQueue)
     : Command(CommandType::COPY_MEMORY, DstQueue),
       MSrcQueue(SrcQueue ? SrcQueue->shared_from_this() : nullptr),
-      MSrcReq(std::move(SrcReq)), MSrcAllocaCmd(SrcAllocaCmd),
-      MDstReq(std::move(DstReq)), MDstPtr(DstPtr) {
+      MSrcReq(SrcReq), MSrcAllocaCmd(SrcAllocaCmd), MDstReq(DstReq),
+      MDstPtr(DstPtr) {
   if (MSrcQueue) {
     MEvent->setContextImpl(MSrcQueue->getContextImpl());
   }
@@ -1852,10 +1854,10 @@ void MemCpyCommandHost::printDot(std::ostream &Stream) const {
 }
 
 UpdateHostRequirementCommand::UpdateHostRequirementCommand(
-    queue_impl *Queue, Requirement Req, AllocaCommandBase *SrcAllocaCmd,
+    queue_impl *Queue, const Requirement &Req, AllocaCommandBase *SrcAllocaCmd,
     void **DstPtr)
     : Command(CommandType::UPDATE_REQUIREMENT, Queue),
-      MSrcAllocaCmd(SrcAllocaCmd), MDstReq(std::move(Req)), MDstPtr(DstPtr) {
+      MSrcAllocaCmd(SrcAllocaCmd), MDstReq(Req), MDstPtr(DstPtr) {
 
   emitInstrumentationDataProxy();
 }
@@ -3822,7 +3824,7 @@ UpdateCommandBufferCommand::UpdateCommandBufferCommand(
     std::vector<std::shared_ptr<ext::oneapi::experimental::detail::node_impl>>
         Nodes)
     : Command(CommandType::UPDATE_CMD_BUFFER, Queue), MGraph(Graph),
-      MNodes(Nodes) {}
+      MNodes(std::move(Nodes)) {}
 
 ur_result_t UpdateCommandBufferCommand::enqueueImp() {
   waitForPreparedHostEvents();

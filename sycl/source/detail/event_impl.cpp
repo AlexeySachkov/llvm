@@ -85,11 +85,11 @@ void event_impl::waitInternal(bool *Success) {
 
   // Wait for connected events(e.g. streams prints)
   for (const EventImplPtr &Event : MPostCompleteEvents)
-    Event->wait(Event);
+    Event->wait();
   for (const std::weak_ptr<event_impl> &WeakEventPtr :
        MWeakPostCompleteEvents) {
     if (EventImplPtr Event = WeakEventPtr.lock())
-      Event->wait(Event);
+      Event->wait();
   }
 }
 
@@ -279,8 +279,7 @@ void event_impl::instrumentationEpilog(void *TelemetryEvent,
 }
 #endif // XPTI_ENABLE_INSTRUMENTATION
 
-void event_impl::wait(std::shared_ptr<sycl::detail::event_impl> Self,
-                      bool *Success) {
+void event_impl::wait(bool *Success) {
   if (MState == HES_Discarded)
     throw sycl::exception(make_error_code(errc::invalid),
                           "wait method cannot be used for a discarded event.");
@@ -305,16 +304,15 @@ void event_impl::wait(std::shared_ptr<sycl::detail::event_impl> Self,
     // need to go via the slow path event waiting in the scheduler
     waitInternal(Success);
   else if (MCommand)
-    detail::Scheduler::getInstance().waitForEvent(Self, Success);
+    detail::Scheduler::getInstance().waitForEvent(*this, Success);
 
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   instrumentationEpilog(TelemetryEvent, Name, StreamID, IId);
 #endif
 }
 
-void event_impl::wait_and_throw(
-    std::shared_ptr<sycl::detail::event_impl> Self) {
-  wait(Self);
+void event_impl::wait_and_throw() {
+  wait();
 
   if (std::shared_ptr<queue_impl> SubmittedQueue = MSubmittedQueue.lock())
     SubmittedQueue->throw_asynchronous();
@@ -617,7 +615,7 @@ bool event_impl::isCompleted() {
          info::event_command_status::complete;
 }
 
-void event_impl::setCommand(void *Cmd) { MCommand = Cmd; }
+void event_impl::setCommand(Command *Cmd) { MCommand = Cmd; }
 
 } // namespace detail
 } // namespace _V1
