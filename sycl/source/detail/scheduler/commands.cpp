@@ -90,15 +90,13 @@ static bool CurrentCodeLocationValid() {
          (FunctionName && FunctionName[0] != '\0');
 }
 
-void emitInstrumentationGeneral(uint32_t StreamID, uint64_t InstanceID,
+void emitInstrumentationGeneral(xpti::stream_id_t StreamID, uint64_t InstanceID,
                                 xpti_td *TraceEvent, uint16_t Type,
                                 const void *Addr) {
-  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID), Type) &&
-        TraceEvent))
+  if (!(xptiCheckTraceEnabled(StreamID, Type) && TraceEvent))
     return;
   // Trace event notifier that emits a Type event
-  xptiNotifySubscribers(static_cast<uint8_t>(StreamID), Type,
-                        detail::GSYCLGraphEvent,
+  xptiNotifySubscribers(StreamID, Type, detail::GSYCLGraphEvent,
                         static_cast<xpti_td *>(TraceEvent), InstanceID, Addr);
 }
 
@@ -613,8 +611,7 @@ void Command::emitEdgeEventForCommandDependence(
   // Bail early if either the source or the target node for the given
   // dependency is undefined or NULL
   constexpr uint16_t NotificationTraceType = xpti::trace_edge_create;
-  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID),
-                              NotificationTraceType) &&
+  if (!(xptiCheckTraceEnabled(MStreamID, NotificationTraceType) &&
         MTraceEvent && Cmd && Cmd->MTraceEvent))
     return;
 
@@ -644,9 +641,9 @@ void Command::emitEdgeEventForCommandDependence(
     } else {
       xpti::addMetadata(EdgeEvent, "event", reinterpret_cast<size_t>(ObjAddr));
     }
-    xptiNotifySubscribers(static_cast<uint8_t>(MStreamID),
-                          NotificationTraceType, detail::GSYCLGraphEvent,
-                          EdgeEvent, EdgeInstanceNo, nullptr);
+    xptiNotifySubscribers(MStreamID, NotificationTraceType,
+                          detail::GSYCLGraphEvent, EdgeEvent, EdgeInstanceNo,
+                          nullptr);
   }
   // General comment - None of these are serious errors as the instrumentation
   // layer MUST be tolerant of errors. If we need to let the end user know, we
@@ -663,7 +660,7 @@ void Command::emitEdgeEventForEventDependence(Command *Cmd,
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   // If we have failed to create an event to represent the Command, then we
   // cannot emit an edge event. Bail early!
-  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)) && MTraceEvent))
+  if (!(xptiCheckTraceEnabled(MStreamID) && MTraceEvent))
     return;
 
   if (Cmd && Cmd->MTraceEvent) {
@@ -689,9 +686,9 @@ void Command::emitEdgeEventForEventDependence(Command *Cmd,
                       xpti_at::active, &VNodeInstanceNo);
     // Emit the virtual node first
     xpti::addMetadata(NodeEvent, "kernel_name", NodeName);
-    xptiNotifySubscribers(static_cast<uint8_t>(MStreamID),
-                          xpti::trace_node_create, detail::GSYCLGraphEvent,
-                          NodeEvent, VNodeInstanceNo, nullptr);
+    xptiNotifySubscribers(MStreamID, xpti::trace_node_create,
+                          detail::GSYCLGraphEvent, NodeEvent, VNodeInstanceNo,
+                          nullptr);
     // Create a new event for the edge
     std::string EdgeName = SH.nameWithAddressString("Event", AddressStr);
     xpti::payload_t EdgePayload(EdgeName.c_str(), MAddress);
@@ -707,9 +704,9 @@ void Command::emitEdgeEventForEventDependence(Command *Cmd,
       EdgeEvent->target_id = TgtEvent->unique_id;
       xpti::addMetadata(EdgeEvent, "event",
                         reinterpret_cast<size_t>(UrEventAddr));
-      xptiNotifySubscribers(static_cast<uint8_t>(MStreamID),
-                            xpti::trace_edge_create, detail::GSYCLGraphEvent,
-                            EdgeEvent, EdgeInstanceNo, nullptr);
+      xptiNotifySubscribers(MStreamID, xpti::trace_edge_create,
+                            detail::GSYCLGraphEvent, EdgeEvent, EdgeInstanceNo,
+                            nullptr);
     }
     return;
   }
@@ -719,7 +716,7 @@ void Command::emitEdgeEventForEventDependence(Command *Cmd,
 uint64_t Command::makeTraceEventProlog(void *MAddress) {
   uint64_t CommandInstanceNo = 0;
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return CommandInstanceNo;
 
   MTraceEventPrologComplete = true;
@@ -752,12 +749,10 @@ uint64_t Command::makeTraceEventProlog(void *MAddress) {
 void Command::makeTraceEventEpilog() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   constexpr uint16_t NotificationTraceType = xpti::trace_node_create;
-  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID),
-                              NotificationTraceType) &&
-        MTraceEvent))
+  if (!(xptiCheckTraceEnabled(MStreamID, NotificationTraceType) && MTraceEvent))
     return;
   assert(MTraceEventPrologComplete);
-  xptiNotifySubscribers(static_cast<uint8_t>(MStreamID), NotificationTraceType,
+  xptiNotifySubscribers(MStreamID, NotificationTraceType,
                         detail::GSYCLGraphEvent,
                         static_cast<xpti_td *>(MTraceEvent), MInstanceID,
                         static_cast<const void *>(MCommandNodeType.c_str()));
@@ -854,18 +849,16 @@ Command *Command::addDep(EventImplPtr Event,
 
 void Command::emitEnqueuedEventSignal(const ur_event_handle_t UrEventAddr) {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  emitInstrumentationGeneral(static_cast<uint32_t>(MStreamID), MInstanceID,
-                             static_cast<xpti_td *>(MTraceEvent),
-                             xpti::trace_signal,
-                             static_cast<const void *>(UrEventAddr));
+  emitInstrumentationGeneral(
+      MStreamID, MInstanceID, static_cast<xpti_td *>(MTraceEvent),
+      xpti::trace_signal, static_cast<const void *>(UrEventAddr));
 #endif
   std::ignore = UrEventAddr;
 }
 
 void Command::emitInstrumentation(uint16_t Type, const char *Txt) {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  return emitInstrumentationGeneral(static_cast<uint32_t>(MStreamID),
-                                    MInstanceID,
+  return emitInstrumentationGeneral(MStreamID, MInstanceID,
                                     static_cast<xpti_td *>(MTraceEvent), Type,
                                     static_cast<const void *>(Txt));
 #else
@@ -999,9 +992,9 @@ void Command::resolveReleaseDependencies(std::set<Command *> &DepList) {
         EdgeEvent->source_id = SrcTraceEvent->unique_id;
         xpti::addMetadata(EdgeEvent, "memory_object",
                           reinterpret_cast<size_t>(MAddress));
-        xptiNotifySubscribers(static_cast<uint8_t>(MStreamID),
-                              xpti::trace_edge_create, detail::GSYCLGraphEvent,
-                              EdgeEvent, EdgeInstanceNo, nullptr);
+        xptiNotifySubscribers(MStreamID, xpti::trace_edge_create,
+                              detail::GSYCLGraphEvent, EdgeEvent,
+                              EdgeInstanceNo, nullptr);
       }
     }
   }
@@ -1050,7 +1043,7 @@ AllocaCommandBase::AllocaCommandBase(CommandType Type, queue_impl *Queue,
 
 void AllocaCommandBase::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1100,7 +1093,7 @@ AllocaCommand::AllocaCommand(queue_impl *Queue, Requirement Req,
 
 void AllocaCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
 
   makeTraceEventEpilog();
@@ -1177,7 +1170,7 @@ AllocaSubBufCommand::AllocaSubBufCommand(queue_impl *Queue, Requirement Req,
 
 void AllocaSubBufCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
 
   xpti_td *TE = static_cast<xpti_td *>(MTraceEvent);
@@ -1250,7 +1243,7 @@ ReleaseCommand::ReleaseCommand(queue_impl *Queue, AllocaCommandBase *AllocaCmd)
 
 void ReleaseCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1377,7 +1370,7 @@ MapMemObject::MapMemObject(AllocaCommandBase *SrcAllocaCmd, Requirement Req,
 
 void MapMemObject::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1439,7 +1432,7 @@ UnMapMemObject::UnMapMemObject(AllocaCommandBase *DstAllocaCmd, Requirement Req,
 
 void UnMapMemObject::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1534,7 +1527,7 @@ MemCpyCommand::MemCpyCommand(Requirement SrcReq,
 
 void MemCpyCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1707,7 +1700,7 @@ MemCpyCommandHost::MemCpyCommandHost(Requirement SrcReq,
 
 void MemCpyCommandHost::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1798,7 +1791,7 @@ void EmptyCommand::addRequirement(Command *DepCmd, AllocaCommandBase *AllocaCmd,
 
 void EmptyCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -1869,7 +1862,7 @@ UpdateHostRequirementCommand::UpdateHostRequirementCommand(
 
 void UpdateHostRequirementCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
   // Create a payload with the command name and an event using this payload to
   // emit a node_create
@@ -2113,7 +2106,8 @@ void instrumentationFillCommonData(const std::string &KernelName,
 
 #ifdef XPTI_ENABLE_INSTRUMENTATION
 std::pair<xpti_td *, uint64_t> emitKernelInstrumentationData(
-    int32_t StreamID, const std::shared_ptr<detail::kernel_impl> &SyclKernel,
+    xpti::stream_id_t StreamID,
+    const std::shared_ptr<detail::kernel_impl> &SyclKernel,
     const detail::code_location &CodeLoc, bool IsTopCodeLoc,
     const std::string_view SyclKernelName,
     KernelNameBasedCacheT *KernelNameBasedCachePtr, queue_impl *Queue,
@@ -2123,7 +2117,7 @@ std::pair<xpti_td *, uint64_t> emitKernelInstrumentationData(
   auto XptiObjects = std::make_pair<xpti_td *, uint64_t>(
       nullptr, std::numeric_limits<uint64_t>::max());
   constexpr uint16_t NotificationTraceType = xpti::trace_node_create;
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID)))
+  if (!xptiCheckTraceEnabled(StreamID))
     return XptiObjects;
 
   void *Address = nullptr;
@@ -2160,8 +2154,8 @@ std::pair<xpti_td *, uint64_t> emitKernelInstrumentationData(
         CGArgs);
 
     xptiNotifySubscribers(
-        static_cast<uint8_t>(StreamID), NotificationTraceType,
-        detail::GSYCLGraphEvent, CmdTraceEvent, InstanceID,
+        StreamID, NotificationTraceType, detail::GSYCLGraphEvent, CmdTraceEvent,
+        InstanceID,
         static_cast<const void *>(
             commandToNodeType(Command::CommandType::RUN_CG).c_str()));
   }
@@ -2173,7 +2167,7 @@ std::pair<xpti_td *, uint64_t> emitKernelInstrumentationData(
 void ExecCGCommand::emitInstrumentationData() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   constexpr uint16_t NotificationTraceType = xpti::trace_node_create;
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(MStreamID)))
+  if (!xptiCheckTraceEnabled(MStreamID))
     return;
 
   std::string KernelName;
@@ -2217,8 +2211,8 @@ void ExecCGCommand::emitInstrumentationData() {
     }
 
     xptiNotifySubscribers(
-        static_cast<uint8_t>(MStreamID), NotificationTraceType,
-        detail::GSYCLGraphEvent, CmdTraceEvent, MInstanceID,
+        MStreamID, NotificationTraceType, detail::GSYCLGraphEvent,
+        CmdTraceEvent, MInstanceID,
         static_cast<const void *>(commandToNodeType(MType).c_str()));
   }
 #endif

@@ -221,13 +221,13 @@ void event_impl::setSubmittedQueue(std::weak_ptr<queue_impl> SubmittedQueue) {
   MSubmittedQueue = std::move(SubmittedQueue);
 }
 
-void *event_impl::instrumentationProlog(std::string &Name, int32_t StreamID,
+#ifdef XPTI_ENABLE_INSTRUMENTATION
+void *event_impl::instrumentationProlog(std::string &Name,
+                                        xpti::stream_id_t StreamID,
                                         uint64_t &IId) const {
   void *TraceEvent = nullptr;
-#ifdef XPTI_ENABLE_INSTRUMENTATION
   constexpr uint16_t NotificationTraceType = xpti::trace_wait_begin;
-  if (!xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID),
-                             NotificationTraceType))
+  if (!xptiCheckTraceEnabled(StreamID, NotificationTraceType))
     return TraceEvent;
   xpti::trace_event_data_t *WaitEvent = nullptr;
 
@@ -257,31 +257,27 @@ void *event_impl::instrumentationProlog(std::string &Name, int32_t StreamID,
   }
   // Record the current instance ID for use by Epilog
   IId = xptiGetUniqueId();
-  xptiNotifySubscribers(static_cast<uint8_t>(StreamID), NotificationTraceType,
-                        nullptr, WaitEvent, IId,
-                        static_cast<const void *>(Name.c_str()));
+  xptiNotifySubscribers(StreamID, NotificationTraceType, nullptr, WaitEvent,
+                        IId, static_cast<const void *>(Name.c_str()));
   TraceEvent = (void *)WaitEvent;
-#endif
   return TraceEvent;
 }
 
 void event_impl::instrumentationEpilog(void *TelemetryEvent,
                                        const std::string &Name,
-                                       int32_t StreamID, uint64_t IId) const {
-#ifdef XPTI_ENABLE_INSTRUMENTATION
+                                       xpti::stream_id_t StreamID,
+                                       uint64_t IId) const {
   constexpr uint16_t NotificationTraceType = xpti::trace_wait_end;
-  if (!(xptiCheckTraceEnabled(static_cast<uint16_t>(StreamID),
-                              NotificationTraceType) &&
+  if (!(xptiCheckTraceEnabled(StreamID, NotificationTraceType) &&
         TelemetryEvent))
     return;
   // Close the wait() scope
   xpti::trace_event_data_t *TraceEvent =
       (xpti::trace_event_data_t *)TelemetryEvent;
-  xptiNotifySubscribers(static_cast<uint8_t>(StreamID), NotificationTraceType,
-                        nullptr, TraceEvent, IId,
-                        static_cast<const void *>(Name.c_str()));
-#endif
+  xptiNotifySubscribers(StreamID, NotificationTraceType, nullptr, TraceEvent,
+                        IId, static_cast<const void *>(Name.c_str()));
 }
+#endif // XPTI_ENABLE_INSTRUMENTATION
 
 void event_impl::wait(std::shared_ptr<sycl::detail::event_impl> Self,
                       bool *Success) {
@@ -299,7 +295,7 @@ void event_impl::wait(std::shared_ptr<sycl::detail::event_impl> Self,
   void *TelemetryEvent = nullptr;
   uint64_t IId = 0;
   std::string Name;
-  int32_t StreamID = xptiRegisterStream(SYCL_STREAM_NAME);
+  xpti::stream_id_t StreamID = xptiRegisterStream(SYCL_STREAM_NAME);
   TelemetryEvent = instrumentationProlog(Name, StreamID, IId);
 #endif
 

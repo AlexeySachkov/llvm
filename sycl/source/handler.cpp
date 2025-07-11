@@ -580,13 +580,13 @@ event handler::finalize() {
 #endif
       auto EnqueueKernel = [&]() {
 #ifdef XPTI_ENABLE_INSTRUMENTATION
-        auto StreamID = xpti::invalid_id<>;
+        auto StreamID = xpti::invalid_id<xpti::stream_id_t>;
         xpti_td *CmdTraceEvent = nullptr;
         uint64_t InstanceID = 0;
         if (xptiEnabled) {
           StreamID = xptiRegisterStream(detail::SYCL_STREAM_NAME);
           std::tie(CmdTraceEvent, InstanceID) = emitKernelInstrumentationData(
-              static_cast<int32_t>(StreamID), MKernel, MCodeLoc, impl->MIsTopCodeLoc,
+              StreamID, MKernel, MCodeLoc, impl->MIsTopCodeLoc,
               MKernelName.data(), impl->MKernelNameBasedCachePtr,
               impl->get_queue_or_null(), impl->MNDRDesc, KernelBundleImpPtr,
               impl->MArgs);

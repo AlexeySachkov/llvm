@@ -745,7 +745,7 @@ ur_exp_command_buffer_sync_point_t exec_graph_impl::enqueueNodeDirect(
 
 #ifdef XPTI_ENABLE_INSTRUMENTATION
   const bool xptiEnabled = xptiTraceEnabled();
-  auto StreamID = xpti::invalid_id<>;
+  auto StreamID = xpti::invalid_id<xpti::stream_id_t>;
   xpti_td *CmdTraceEvent = nullptr;
   uint64_t InstanceID = 0;
   if (xptiEnabled) {
@@ -756,10 +756,9 @@ ur_exp_command_buffer_sync_point_t exec_graph_impl::enqueueNodeDirect(
                                         CGExec->MFunctionName.c_str(),
                                         CGExec->MLine, CGExec->MColumn);
     std::tie(CmdTraceEvent, InstanceID) = emitKernelInstrumentationData(
-        static_cast<int32_t>(StreamID), CGExec->MSyclKernel, CodeLoc,
-        CGExec->MIsTopCodeLoc, CGExec->MKernelName.data(),
-        CGExec->MKernelNameBasedCachePtr, nullptr, CGExec->MNDRDesc,
-        CGExec->MKernelBundle.get(), CGExec->MArgs);
+        StreamID, CGExec->MSyclKernel, CodeLoc, CGExec->MIsTopCodeLoc,
+        CGExec->MKernelName.data(), CGExec->MKernelNameBasedCachePtr, nullptr,
+        CGExec->MNDRDesc, CGExec->MKernelBundle.get(), CGExec->MArgs);
     if (CmdTraceEvent)
       sycl::detail::emitInstrumentationGeneral(
           StreamID, InstanceID, CmdTraceEvent, xpti::trace_task_begin, nullptr);
