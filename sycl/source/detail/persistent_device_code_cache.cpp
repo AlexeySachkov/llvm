@@ -167,6 +167,7 @@ getProgramBinaryData(const ur_program_handle_t &NativePrg,
                                  });
     assert(DeviceIt != URDevices.end() &&
            "Device is not associated with the program");
+    auto URDeviceIndex =
         static_cast<size_t>(std::distance(URDevices.begin(), DeviceIt));
     *ResultIt = std::move(Binaries[URDeviceIndex]);
     ++ResultIt;

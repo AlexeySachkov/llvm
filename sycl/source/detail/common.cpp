@@ -39,8 +39,8 @@ tls_code_loc_t::tls_code_loc_t()
 
 ur_code_location_t codeLocationCallback(void *) {
   ur_code_location_t codeloc;
-  codeloc.columnNumber = static_cast<uint32_t>(GCodeLocTLS.columnNumber());
-  codeloc.lineNumber = static_cast<uint32_t>(GCodeLocTLS.lineNumber());
+  codeloc.columnNumber = GCodeLocTLS.columnNumber();
+  codeloc.lineNumber = GCodeLocTLS.lineNumber();
   codeloc.functionName = GCodeLocTLS.functionName();
   codeloc.sourceFile = GCodeLocTLS.fileName();
 
