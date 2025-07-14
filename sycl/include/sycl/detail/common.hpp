@@ -69,8 +69,8 @@ struct code_location {
   static constexpr code_location
   current(const char *fileName = __CODELOC_FILE_NAME,
           const char *funcName = __CODELOC_FUNCTION,
-          unsigned long lineNo = __CODELOC_LINE,
-          unsigned long columnNo = __CODELOC_COLUMN) noexcept {
+          uint32_t lineNo = __CODELOC_LINE,
+          uint32_t columnNo = __CODELOC_COLUMN) noexcept {
     return code_location(fileName, funcName, lineNo, columnNo);
   }
 
@@ -79,23 +79,24 @@ struct code_location {
 #undef __CODELOC_LINE
 #undef __CODELOC_COLUMN
 
-  constexpr code_location(const char *file, const char *func,
-                          unsigned long line, unsigned long col) noexcept
+  constexpr code_location(const char *file, const char *func, uint32_t line,
+                          uint32_t col) noexcept
       : MFileName(file), MFunctionName(func), MLineNo(line), MColumnNo(col) {}
 
   constexpr code_location() noexcept
-      : MFileName(nullptr), MFunctionName(nullptr), MLineNo(0), MColumnNo(0) {}
+      : MFileName(nullptr), MFunctionName(nullptr), MLineNo(0u), MColumnNo(0u) {
+  }
 
-  constexpr unsigned long lineNumber() const noexcept { return MLineNo; }
-  constexpr unsigned long columnNumber() const noexcept { return MColumnNo; }
+  constexpr uint32_t lineNumber() const noexcept { return MLineNo; }
+  constexpr uint32_t columnNumber() const noexcept { return MColumnNo; }
   constexpr const char *fileName() const noexcept { return MFileName; }
   constexpr const char *functionName() const noexcept { return MFunctionName; }
 
 private:
   const char *MFileName;
   const char *MFunctionName;
-  unsigned long MLineNo;
-  unsigned long MColumnNo;
+  uint32_t MLineNo;
+  uint32_t MColumnNo;
 };
 
 /// @brief Data type that manages the code_location information in TLS

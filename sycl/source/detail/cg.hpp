@@ -241,7 +241,7 @@ public:
   // Storage for function name and source file name
   std::string MFunctionName, MFileName;
   // Storage for line and column of code location
-  unsigned long MLine, MColumn;
+  uint32_t MLine, MColumn;
   bool MIsTopCodeLoc;
 };
 
