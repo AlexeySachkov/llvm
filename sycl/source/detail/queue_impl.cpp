@@ -525,9 +525,8 @@ void *queue_impl::instrumentationProlog(const detail::code_location &CodeLoc,
   if (CodeLoc.fileName()) {
     // We have source code location information
     Payload =
-        xpti::payload_t(Name.c_str(), CodeLoc.fileName(),
-                        static_cast<int>(CodeLoc.lineNumber()),
-                        static_cast<int>(CodeLoc.columnNumber()), (void *)this);
+        xpti::payload_t(Name.c_str(), CodeLoc.fileName(), CodeLoc.lineNumber(),
+                        CodeLoc.columnNumber(), (void *)this);
     HasSourceInfo = true;
   } else {
     // We have no location information, so we'll use the address of the queue

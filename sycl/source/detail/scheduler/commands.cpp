@@ -2047,8 +2047,8 @@ void instrumentationAddExtraKernelMetadata(
 
 void instrumentationFillCommonData(const std::string &KernelName,
                                    const std::string &FuncName,
-                                   const std::string &FileName, uint64_t Line,
-                                   uint64_t Column, const void *const Address,
+                                   const std::string &FileName, uint32_t Line,
+                                   uint32_t Column, const void *const Address,
                                    queue_impl *Queue,
                                    std::optional<bool> &FromSource,
                                    uint64_t &OutInstanceID,
@@ -2063,9 +2063,9 @@ void instrumentationFillCommonData(const std::string &KernelName,
   xpti::payload_t Payload;
   if (!FileName.empty()) {
     // File name has a valid string
-    Payload = xpti::payload_t(
-        FuncName.empty() ? KernelName.data() : FuncName.data(), FileName.data(),
-        static_cast<int>(Line), static_cast<int>(Column), Address);
+    Payload =
+        xpti::payload_t(FuncName.empty() ? KernelName.data() : FuncName.data(),
+                        FileName.data(), Line, Column, Address);
     HasSourceInfo = true;
   } else if (Address) {
     // We have a valid function name and an address

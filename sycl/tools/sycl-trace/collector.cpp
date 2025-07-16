@@ -183,7 +183,7 @@ XPTI_CALLBACK_API void xptiTraceInit(unsigned int /*major_version*/,
   if (std::string_view(StreamName) == "ur.call" &&
       std::getenv("SYCL_TRACE_UR_ENABLE")) {
     urPrintersInit();
-    uint16_t StreamID = xptiRegisterStream(StreamName);
+    xpti::stream_id_t StreamID = xptiRegisterStream(StreamName);
     xptiRegisterCallback(StreamID, xpti::trace_function_with_args_begin,
                          urCallback);
     xptiRegisterCallback(StreamID, xpti::trace_function_with_args_end,
@@ -196,7 +196,7 @@ XPTI_CALLBACK_API void xptiTraceInit(unsigned int /*major_version*/,
              std::getenv("SYCL_TRACE_ZE_ENABLE")) {
     if (zeCollectorLibrary.initPrinters()) {
       HasZEPrinter = true;
-      uint16_t StreamID = xptiRegisterStream(StreamName);
+      xpti::stream_id_t StreamID = xptiRegisterStream(StreamName);
       xptiRegisterCallback(StreamID, xpti::trace_function_with_args_begin,
                            zeCallback);
       xptiRegisterCallback(StreamID, xpti::trace_function_with_args_end,
@@ -207,7 +207,7 @@ XPTI_CALLBACK_API void xptiTraceInit(unsigned int /*major_version*/,
   } else if (std::string_view(StreamName) == "sycl.experimental.cuda.debug" &&
              std::getenv("SYCL_TRACE_CU_ENABLE")) {
     if (cudaCollectorLibrary.initPrinters()) {
-      uint16_t StreamID = xptiRegisterStream(StreamName);
+      xpti::stream_id_t StreamID = xptiRegisterStream(StreamName);
       xptiRegisterCallback(StreamID, xpti::trace_function_with_args_begin,
                            cudaCallback);
       xptiRegisterCallback(StreamID, xpti::trace_function_with_args_end,
@@ -218,7 +218,7 @@ XPTI_CALLBACK_API void xptiTraceInit(unsigned int /*major_version*/,
   if (std::string_view(StreamName) == "sycl" &&
       std::getenv("SYCL_TRACE_API_ENABLE")) {
     syclPrintersInit();
-    uint16_t StreamID = xptiRegisterStream(StreamName);
+    xpti::stream_id_t StreamID = xptiRegisterStream(StreamName);
     xptiRegisterCallback(StreamID, xpti::trace_diagnostics, syclCallback);
     xptiRegisterCallback(StreamID, xpti::trace_task_begin, syclCallback);
     xptiRegisterCallback(StreamID, xpti::trace_task_end, syclCallback);
@@ -227,7 +227,7 @@ XPTI_CALLBACK_API void xptiTraceInit(unsigned int /*major_version*/,
   }
   if (std::getenv("SYCL_TRACE_VERIFICATION_ENABLE")) {
     vPrintersInit();
-    uint16_t StreamID = xptiRegisterStream(StreamName);
+    xpti::stream_id_t StreamID = xptiRegisterStream(StreamName);
     xptiRegisterCallback(StreamID, xpti::trace_function_with_args_begin,
                          vCallback);
     xptiRegisterCallback(StreamID, xpti::trace_function_with_args_end,

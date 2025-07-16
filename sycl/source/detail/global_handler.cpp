@@ -106,8 +106,7 @@ void GlobalHandler::TraceEventXPTI(const char *Message) {
     // Creating a tracepoint will convert a CodeLocation to UID, if not set
     xpti::framework::tracepoint_t TP(
         CodeLocation.fileName(), CodeLocation.functionName(),
-        static_cast<int>(CodeLocation.lineNumber()),
-        static_cast<int>(CodeLocation.columnNumber()), nullptr);
+        CodeLocation.lineNumber(), CodeLocation.columnNumber(), nullptr);
 
     // The call to notify will have the signature of:
     // (1) the stream defined in .stream()
