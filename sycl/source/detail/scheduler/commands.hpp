@@ -357,10 +357,7 @@ public:
   ///
   /// Stream ids are positive integers and we set it to an invalid value.
   xpti::stream_id_t MStreamID = xpti::invalid_id<xpti::stream_id_t>;
-<<<<<<< HEAD
-=======
 #endif
->>>>>>> origin/sycl
   /// Reserved for storing the object address such as SPIR-V or memory object
   /// address.
   void *MAddress = nullptr;

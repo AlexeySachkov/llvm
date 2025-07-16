@@ -17,6 +17,7 @@
 #include <array>       // for array
 #include <cassert>     // for assert
 #include <cstddef>     // for size_t
+#include <cstdint>
 #include <string>      // for allocator, operator+
 #include <type_traits> // for enable_if_t
 #include <utility>     // for index_sequence, make_i...
