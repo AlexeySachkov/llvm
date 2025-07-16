@@ -153,9 +153,8 @@ class device_impl : public std::enable_shared_from_this<device_impl> {
       static_assert(
           !check_type_in_v<typename ur_ret_t::value_type, bool, std::string>);
       size_t ResultSize = 0;
-      ur_result_t Error =
-          getAdapter().call_nocheck<UrApiKind::urDeviceGetInfo>(
-              getHandleRef(), Desc, 0u, nullptr, &ResultSize);
+      ur_result_t Error = getAdapter().call_nocheck<UrApiKind::urDeviceGetInfo>(
+          getHandleRef(), Desc, 0u, nullptr, &ResultSize);
       if (Error != UR_RESULT_SUCCESS)
         return {Error};
       if (ResultSize == 0)
@@ -189,7 +188,7 @@ class device_impl : public std::enable_shared_from_this<device_impl> {
       } else if constexpr (is_std_vector_v<ur_ret_t>) {
         size_t ResultSize = 0;
         getAdapter().call<UrApiKind::urDeviceGetInfo>(getHandleRef(), Desc, 0u,
-                                                       nullptr, &ResultSize);
+                                                      nullptr, &ResultSize);
         if (ResultSize == 0)
           return ur_ret_t{};
 
@@ -2297,7 +2296,7 @@ struct devices_deref_impl {
   }
 };
 using devices_iterator =
-    variadic_iterator<devices_deref_impl,
+    variadic_iterator<devices_deref_impl, device,
                       std::vector<std::shared_ptr<device_impl>>::const_iterator,
                       std::vector<device>::const_iterator, device_impl *>;
 

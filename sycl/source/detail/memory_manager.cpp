@@ -938,7 +938,7 @@ void MemoryManager::prefetch_usm(void *Mem, queue_impl &Queue, size_t Length,
   adapter_impl &Adapter = Queue.getAdapter();
   Adapter.call<UrApiKind::urEnqueueUSMPrefetch>(
       Queue.getHandleRef(), Mem, Length,
-      static_cast<ur_usm_migration_flags_t>(0),
+      static_cast<ur_usm_migration_flags_t>(0u),
       static_cast<uint32_t>(DepEvents.size()), DepEvents.data(), OutEvent);
 }
 

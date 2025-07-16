@@ -1217,7 +1217,11 @@ ProgramManager::getProgramBuildLog(const ur_program_handle_t &Program,
   size_t URDevicesSize = 0;
   adapter_impl &Adapter = Context.getAdapter();
   Adapter.call<UrApiKind::urProgramGetInfo>(Program, UR_PROGRAM_INFO_DEVICES,
+<<<<<<< HEAD
                                              0u, nullptr, &URDevicesSize);
+=======
+                                            0u, nullptr, &URDevicesSize);
+>>>>>>> origin/sycl
   std::vector<ur_device_handle_t> URDevices(URDevicesSize /
                                             sizeof(ur_device_handle_t));
   Adapter.call<UrApiKind::urProgramGetInfo>(Program, UR_PROGRAM_INFO_DEVICES,
@@ -1242,7 +1246,11 @@ ProgramManager::getProgramBuildLog(const ur_program_handle_t &Program,
     std::string DeviceNameString;
     size_t DeviceNameStrSize = 0;
     Adapter.call<UrApiKind::urDeviceGetInfo>(Device, UR_DEVICE_INFO_NAME, 0u,
+<<<<<<< HEAD
                                               nullptr, &DeviceNameStrSize);
+=======
+                                             nullptr, &DeviceNameStrSize);
+>>>>>>> origin/sycl
     if (DeviceNameStrSize > 0) {
       std::vector<char> DeviceName(DeviceNameStrSize);
       Adapter.call<UrApiKind::urDeviceGetInfo>(Device, UR_DEVICE_INFO_NAME,

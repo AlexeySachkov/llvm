@@ -296,7 +296,7 @@ std::vector<device> device_impl::create_sub_devices() const {
   uint32_t SubDevicesCount = 0;
   adapter_impl &Adapter = getAdapter();
   Adapter.call<UrApiKind::urDevicePartition>(MDevice, &Properties, 0u, nullptr,
-                                              &SubDevicesCount);
+                                             &SubDevicesCount);
 
   return create_sub_devices(&Properties, SubDevicesCount);
 }
