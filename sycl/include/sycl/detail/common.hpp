@@ -14,9 +14,9 @@
 #include <sycl/detail/defines_elementary.hpp> // for __SYCL_ALWAYS_INLINE
 #include <sycl/detail/export.hpp>             // for __SYCL_EXPORT
 
-#include <array>       // for array
-#include <cassert>     // for assert
-#include <cstddef>     // for size_t
+#include <array>   // for array
+#include <cassert> // for assert
+#include <cstddef> // for size_t
 #include <cstdint>
 #include <string>      // for allocator, operator+
 #include <type_traits> // for enable_if_t
@@ -96,8 +96,14 @@ struct code_location {
 private:
   const char *MFileName;
   const char *MFunctionName;
+#ifndef __INTEL_PREVIEW_BREAKING_CHANGES
+  // For preserving layout of handler class
+  unsigned long MLineNo;
+  unsigned long MColumnNo;
+#else
   uint32_t MLineNo;
   uint32_t MColumnNo;
+#endif
 };
 
 /// @brief Data type that manages the code_location information in TLS
