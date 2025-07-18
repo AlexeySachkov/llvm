@@ -88,8 +88,12 @@ struct code_location {
       : MFileName(nullptr), MFunctionName(nullptr), MLineNo(0u), MColumnNo(0u) {
   }
 
-  constexpr uint32_t lineNumber() const noexcept { return MLineNo; }
-  constexpr uint32_t columnNumber() const noexcept { return MColumnNo; }
+  constexpr uint32_t lineNumber() const noexcept {
+    return static_cast<uint32_t>(MLineNo);
+  }
+  constexpr uint32_t columnNumber() const noexcept {
+    return static_cast<uint32_t>(MColumnNo);
+  }
   constexpr const char *fileName() const noexcept { return MFileName; }
   constexpr const char *functionName() const noexcept { return MFunctionName; }
 
