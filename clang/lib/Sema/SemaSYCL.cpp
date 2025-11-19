@@ -6626,6 +6626,187 @@ static void PrintNSClosingBraces(raw_ostream &OS, const DeclContext *DC) {
       [](raw_ostream &, const NamespaceDecl *) {}, OS, DC);
 }
 
+/// Dedicated visitor which helps with printing of kernel arguments in forward
+/// declarations of free function kernels which are declared as function
+/// templates.
+///
+/// Based on:
+/// \code
+/// template <typename T1, typename T2>
+/// void foo(T1 a, int b, T2 c);
+/// \endcode
+///
+/// It prints into the output stream "T1, int, T2".
+///
+/// The main complexity (which motivates addition of such visitor) comes from
+/// the fact that there could be type aliases and default template arguments.
+/// For example:
+/// \code
+/// template<typename T>
+/// void kernel(sycl::accessor<T, 1>);
+/// template void kernel(sycl::accessor<int, 1>);
+/// \endcode
+/// sycl::accessor has many template arguments which have default values. If
+/// we iterate over non-canonicalized argument type, we don't get those default
+/// values and we don't get necessary namespace qualifiers for all the template
+/// arguments. If we iterate over canonicalized argument type, then all
+/// references to T will be replaced with something like type-argument-X-Y.
+/// What this visitor does is it iterates over both in sync, picking the right
+/// values from one or another.
+///
+/// Moral of the story: drop integration header ASAP (but that is blocked
+/// by support for 3rd-party host compilers, which is important).
+class FreeFunctionTemplateKernelArgsPrinter
+    : public ConstTemplateArgumentVisitor<FreeFunctionTemplateKernelArgsPrinter,
+                                          void, ArrayRef<TemplateArgument>> {
+  raw_ostream &O;
+  PrintingPolicy &Policy;
+  ASTContext &Context;
+
+  using Base =
+      ConstTemplateArgumentVisitor<FreeFunctionTemplateKernelArgsPrinter, void,
+                                   ArrayRef<TemplateArgument>>;
+
+public:
+  FreeFunctionTemplateKernelArgsPrinter(raw_ostream &O, PrintingPolicy &Policy,
+                                        ASTContext &Context)
+      : O(O), Policy(Policy), Context(Context) {}
+
+  void Visit(const TemplateSpecializationType *T,
+             const TemplateSpecializationType *CT) {
+    // Use canonical version to print fully qualified name
+    TemplateName TN = CT->getTemplateName();
+    TN.getAsTemplateDecl()->printQualifiedName(O);
+    O << "<";
+
+    ArrayRef<TemplateArgument> SpecArgs = T->template_arguments();
+    ArrayRef<TemplateArgument> DeclArgs = CT->template_arguments();
+    for (size_t I = 0, E = std::max(DeclArgs.size(), SpecArgs.size()),
+                SE = SpecArgs.size();
+         I < E; ++I) {
+      if (I != 0)
+        O << ", ";
+      // If we have a specialized argument, use it. Otherwise fallback to a
+      // default argument.
+      // We pass specialized arguments in case there are references to them
+      // from other types.
+      // FIXME: passing SpecArgs here is incorrect. It refers to template
+      // arguments of a single function argument, but DeclArgs contain
+      // references (in form of depth-index) to template arguments of the
+      // function itself which results in incorrect integration header being
+      // produced.
+      Base::Visit(I < SE ? SpecArgs[I] : DeclArgs[I], SpecArgs);
+    }
+
+    O << ">";
+  }
+
+  // Internal version of the function above that is used when template argument
+  // is a template by itself
+  void Visit(const TemplateSpecializationType *T,
+             ArrayRef<TemplateArgument> SpecArgs) {
+    TemplateName TN = T->getTemplateName();
+    TN.getAsTemplateDecl()->printQualifiedName(O);
+    O << "<";
+    ArrayRef<const TemplateArgument> DeclArgs = T->template_arguments();
+    for (size_t I = 0, E = DeclArgs.size(); I < E; ++I) {
+      if (I != 0)
+        O << ", ";
+      Base::Visit(DeclArgs[I], SpecArgs);
+    }
+    O << ">";
+  }
+
+  void VisitNullTemplateArgument(const TemplateArgument &,
+                                 ArrayRef<TemplateArgument>) {
+    llvm_unreachable("If template argument has not been deduced, then we can't "
+                     "forward-declare it, something went wrong");
+  }
+
+  void VisitTypeTemplateArgument(const TemplateArgument &Arg,
+                                 ArrayRef<TemplateArgument> SpecArgs) {
+    // If we reference an existing template argument, print it instead
+    const auto *TPT = dyn_cast<TemplateTypeParmType>(Arg.getAsType());
+    if (TPT) {
+      SpecArgs[TPT->getIndex()].print(Policy, O, /* IncludeType = */ false);
+      return;
+    }
+
+    const auto *TST = dyn_cast<TemplateSpecializationType>(Arg.getAsType());
+    if (!TST || !Arg.isInstantiationDependent()) {
+      Arg.print(Policy, O, /* IncludeType = */ false);
+      return;
+    }
+
+    // This is an instantiation dependent template specialization, meaning that
+    // some of its arguments reference template arguments of the free function
+    // kernel itself.
+    Visit(TST, SpecArgs);
+  }
+
+  void VisitDeclarationTemplateArgument(const TemplateArgument &,
+                                        ArrayRef<TemplateArgument>) {
+    llvm_unreachable("Free function kernels cannot have non-type template "
+                     "arguments which are pointers or references");
+  }
+  void VisitNullPtrTemplateArgument(const TemplateArgument &,
+                                    ArrayRef<TemplateArgument>) {
+    llvm_unreachable("Free function kernels cannot have non-type template "
+                     "arguments which are pointers or references");
+  }
+
+  void VisitIntegralTemplateArgument(const TemplateArgument &Arg,
+                                     ArrayRef<TemplateArgument>) {
+    Arg.print(Policy, O, /* IncludeType = */ false);
+  }
+
+  void VisitStructuralValueTemplateArgument(const TemplateArgument &Arg,
+                                            ArrayRef<TemplateArgument>) {
+    Arg.print(Policy, O, /* IncludeType = */ false);
+  }
+
+  void VisitTemplateTemplateArgument(const TemplateArgument &Arg,
+                                     ArrayRef<TemplateArgument>) {
+    // FIXME: default printer is not suitable here, see
+    //        free-function-kernel-template-tempalte-arg.cpp
+    Arg.print(Policy, O, /* IncludeType = */ false);
+  }
+
+  void VisitTemplateExpansionTemplateArgument(const TemplateArgument &Arg,
+                                              ArrayRef<TemplateArgument>) {
+    // Likely does not work similar to the one above
+    Arg.print(Policy, O, /* IncludeType = */ false);
+  }
+
+  void VisitExpressionTemplateArgument(const TemplateArgument &Arg,
+                                       ArrayRef<TemplateArgument>) {
+    Expr *E = Arg.getAsExpr();
+    assert(E && "Failed to get an Expr for an Expression template arg?");
+
+    if (Arg.isInstantiationDependent() ||
+        E->getType().getTypePtr()->isScopedEnumeralType()) {
+      // Scoped enumerations can't be implicitly cast from integers, so
+      // we don't need to evaluate them.
+      // If expression is instantiation-dependent, then we can't evaluate it
+      // either, let's fallback to default printing mechanism.
+      Arg.print(Policy, O, /* IncludeType = */ false);
+      return;
+    }
+
+    Expr::EvalResult Res;
+    [[maybe_unused]] bool Success =
+        Arg.getAsExpr()->EvaluateAsConstantExpr(Res, Context);
+    assert(Success && "invalid non-type template argument?");
+    assert(!Res.Val.isAbsent() && "couldn't read the evaulation result?");
+    Res.Val.printPretty(O, Policy, Arg.getAsExpr()->getType(), &Context);
+  }
+
+  void VisitPackTemplateArgument(const TemplateArgument &Arg,
+                                 ArrayRef<TemplateArgument>) {
+    Arg.print(Policy, O, /* IncludeType = */ false);
+  }
+};
+
 class FreeFunctionPrinter {
   raw_ostream &O;
   PrintingPolicy &Policy;
@@ -6789,6 +6970,8 @@ private:
     llvm::raw_svector_ostream ParmListOstream{ParamList};
     Policy.SuppressTagKeyword = true;
 
+    FreeFunctionTemplateKernelArgsPrinter Printer(ParmListOstream, Policy, Context);
+
     for (ParmVarDecl *Param : Parameters) {
       if (FirstParam)
         FirstParam = false;
@@ -6814,56 +6997,19 @@ private:
       QualType T = Param->getType();
       QualType CT = T.getCanonicalType();
 
-      auto *TST = dyn_cast<TemplateSpecializationType>(T.getTypePtr());
-      auto *CTST = dyn_cast<TemplateSpecializationType>(CT.getTypePtr());
+      const auto *TST = dyn_cast<TemplateSpecializationType>(T.getTypePtr());
+      const auto *CTST = dyn_cast<TemplateSpecializationType>(CT.getTypePtr());
       if (!TST || !CTST) {
         ParmListOstream << T.getAsString(Policy);
         continue;
       }
 
-      TemplateName CTN = CTST->getTemplateName();
-      CTN.getAsTemplateDecl()->printQualifiedName(ParmListOstream);
-      ParmListOstream << "<";
+      const TemplateSpecializationType *TSTAsNonAlias =
+          TST->getAsNonAliasTemplateSpecializationType();
+      if (TSTAsNonAlias)
+        TST = TSTAsNonAlias;
 
-      ArrayRef<TemplateArgument> SpecArgs = TST->template_arguments();
-      ArrayRef<TemplateArgument> DeclArgs = CTST->template_arguments();
-
-      auto TemplateArgPrinter = [&](const TemplateArgument &Arg) {
-        if (Arg.getKind() != TemplateArgument::ArgKind::Expression ||
-            Arg.isInstantiationDependent()) {
-          Arg.print(Policy, ParmListOstream, /* IncludeType = */ false);
-          return;
-        }
-
-        Expr *E = Arg.getAsExpr();
-        assert(E && "Failed to get an Expr for an Expression template arg?");
-        if (E->getType().getTypePtr()->isScopedEnumeralType()) {
-          // Scoped enumerations can't be implicitly cast from integers, so
-          // we don't need to evaluate them.
-          Arg.print(Policy, ParmListOstream, /* IncludeType = */ false);
-          return;
-        }
-
-        Expr::EvalResult Res;
-        [[maybe_unused]] bool Success =
-            Arg.getAsExpr()->EvaluateAsConstantExpr(Res, Context);
-        assert(Success && "invalid non-type template argument?");
-        assert(!Res.Val.isAbsent() && "couldn't read the evaulation result?");
-        Res.Val.printPretty(ParmListOstream, Policy, Arg.getAsExpr()->getType(),
-                            &Context);
-      };
-
-      for (size_t I = 0, E = std::max(DeclArgs.size(), SpecArgs.size()),
-                  SE = SpecArgs.size();
-           I < E; ++I) {
-        if (I != 0)
-          ParmListOstream << ", ";
-        // If we have a specialized argument, use it. Otherwise fallback to a
-        // default argument.
-        TemplateArgPrinter(I < SE ? SpecArgs[I] : DeclArgs[I]);
-      }
-
-      ParmListOstream << ">";
+      Printer.Visit(TST, CTST);
     }
     return ParamList.str().str();
   }
